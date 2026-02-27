@@ -13,6 +13,7 @@ This document is an index of best practices for the Brave Browser codebase, disc
 - **[C++ Memory, Lifetime & Threading](./docs/best-practices/coding-standards-memory.md)** - Ownership, WeakPtr, Unretained, raw_ptr, KeyedService shutdown, threading
 - **[C++ API Usage, Containers & Types](./docs/best-practices/coding-standards-apis.md)** - base utilities, containers, type safety, optional, span, callbacks
 - **[Documentation](./docs/best-practices/documentation.md)** - Inline comments, method docs, READMEs, keeping docs fresh, avoiding duplication
+- **[Localization & String Resources](./docs/best-practices/localization.md)** - GRD/GRDP conventions, string descriptions, placeholders, UI text voice, i18n patterns
 - **[Front-End (TypeScript/React)](./docs/best-practices/frontend.md)** - Component props, spread args, XSS prevention
 - **[Android (Java/Kotlin)](./docs/best-practices/android.md)** - Activity/Fragment lifecycle, null safety, LazyHolder singletons, theme handling, Robolectric, bytecode patching, NullAway (`@Nullable` placement, `@MonotonicNonNull`, assert/assume patterns, destruction, view binders, Supplier variance, JNI nullness)
 - **[chromium_src Overrides](./docs/best-practices/chromium-src-overrides.md)** - Overrides vs patches, minimizing duplication, ChromiumImpl fallback
