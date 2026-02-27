@@ -600,21 +600,27 @@ if (IsDoNotDisturbEnabled()) {
 
 ## ✅ Consolidate Feature Flag Checks to Entry Points
 
-**Don't scatter `CHECK`/`DCHECK` for feature flag status throughout the codebase.** Follow the upstream pattern: check at entry points only. Add comments on downstream functions like "Only called when X is enabled".
+**Don't scatter `CHECK`/`DCHECK` for feature flag status in private helper functions.** Follow the upstream pattern: check at entry points only. Add comments on private helpers like "Only called when X is enabled".
+
+**Exception:** Public API functions that can be called independently from multiple callsites should keep their own `CHECK`/`DCHECK` guards — they are entry points themselves.
 
 ```cpp
-// ❌ WRONG - CHECK in every function
+// ❌ WRONG - CHECK in private helper called from a single entry point
 void TabStripModel::SetCustomTitle(...) {
-  CHECK(base::FeatureList::IsEnabled(kRenamingTabs));
-}
-void TabStripModel::ClearCustomTitle(...) {
-  CHECK(base::FeatureList::IsEnabled(kRenamingTabs));
+  CHECK(base::FeatureList::IsEnabled(kRenamingTabs));  // redundant
 }
 
-// ✅ CORRECT - check at entry point, comment downstream
+// ✅ CORRECT - check at entry point, comment private helpers
 void OnTabContextMenuAction(int action) {
   if (!base::FeatureList::IsEnabled(kRenamingTabs)) return;
   model->SetCustomTitle(...);  // Only called when kRenamingTabs enabled
+}
+
+// ✅ ALSO CORRECT - public function keeps its own CHECK
+// Public API: callable from any context, not just one entry point
+bool StoragePartitionUtils::IsContainersStoragePartition(...) {
+  CHECK(base::FeatureList::IsEnabled(features::kContainers));
+  ...
 }
 ```
 
