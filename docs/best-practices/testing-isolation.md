@@ -661,3 +661,25 @@ MyDatabase::MyDatabase() {
   DETACH_FROM_SEQUENCE(sequence_checker_);
 }
 ```
+
+---
+
+<a id="TI-036"></a>
+
+## ✅ Use `TEST()` Instead of `TEST_F()` for Empty Fixtures
+
+**When a test fixture class is empty (inherits from `testing::Test` with no added members, `SetUp()`, or `TearDown()`), use the plain `TEST()` macro.** `TEST_F` is only needed when the fixture provides shared state or configuration across tests.
+
+```cpp
+// ❌ WRONG - empty fixture with TEST_F
+class MyUtilsTest : public testing::Test {};
+
+TEST_F(MyUtilsTest, ParsesValidInput) {
+  EXPECT_EQ(Parse("abc"), "abc");
+}
+
+// ✅ CORRECT - no fixture needed
+TEST(MyUtilsTest, ParsesValidInput) {
+  EXPECT_EQ(Parse("abc"), "abc");
+}
+```

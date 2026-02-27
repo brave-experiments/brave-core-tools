@@ -992,3 +992,43 @@ struct ModelFiles {
 ## ❌ Avoid Cross-Feature Module Dependencies
 
 **Feature modules should not import classes from other unrelated feature modules.** For example, a VPN feature should not directly depend on classes from the Rewards or Wallet modules. If shared functionality is needed, extract it into a common utility or use an interface/abstraction layer. Cross-feature dependencies create tight coupling that makes features hard to modify or remove independently.
+
+---
+
+<a id="ARCH-054"></a>
+
+## ✅ Shared URL Constants Belong in `brave_domains`
+
+**When a URL constant (like a service endpoint) is shared across multiple components with no clear single owner, place it in a `brave_domains:constants` target.** Don't duplicate the constant in each component, and don't add it to the legacy `brave_constants.h`.
+
+```gn
+# ❌ WRONG - duplicated across components
+# components/brave_rewards/common/constants.h
+inline constexpr char kGate3Url[] = "https://gate3.brave.com";
+# components/brave_wallet/common/constants.h
+inline constexpr char kGate3Url[] = "https://gate3.brave.com";
+
+# ✅ CORRECT - shared via brave_domains
+# components/brave_domains/constants.h (with appropriate buildflag guard)
+inline constexpr char kGate3Url[] = "https://gate3.brave.com";
+```
+
+---
+
+<a id="ARCH-055"></a>
+
+## ✅ Prefer Non-Optional Arrays Over Optional Arrays in Mojom
+
+**In Mojom interface definitions, prefer a non-optional array (empty for "no items") over an optional array (`array<Type>?`).** Only use optional arrays when `null` has a distinct semantic meaning from "empty."
+
+```mojom
+// ❌ AVOID - unless null means something different from empty
+struct SearchResult {
+  array<string>? queries;  // Is null different from []?
+};
+
+// ✅ PREFERRED - empty array means "no items"
+struct SearchResult {
+  array<string> queries;  // Empty array = no queries
+};
+```

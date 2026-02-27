@@ -1050,3 +1050,37 @@ TEST_F(MyFeatureDeathTest, CrashesOnNull) {
   EXPECT_DEATH(Process(nullptr), "");
 }
 ```
+
+---
+
+<a id="CS-062"></a>
+
+## ✅ Pass Primitive Types by Value, Not Const Reference
+
+**Primitive types (`char`, `int`, `bool`, `float`, `double`, etc.) should always be passed by value, not by `const&`.** The indirection of a reference is more expensive than copying a primitive.
+
+```cpp
+// ❌ WRONG - unnecessary indirection
+bool IsAllowedChar(const char& c) { ... }
+void SetEnabled(const bool& enabled) { ... }
+
+// ✅ CORRECT - pass primitives by value
+bool IsAllowedChar(char c) { ... }
+void SetEnabled(bool enabled) { ... }
+```
+
+---
+
+<a id="CS-063"></a>
+
+## ✅ Use `constexpr` for Compile-Time Constant `base::TimeDelta` Values
+
+**Declare time constants as `constexpr base::TimeDelta` rather than just `const`.** The `base::Milliseconds()`, `base::Seconds()`, and similar factory functions are constexpr-capable, so the value can be computed at compile time.
+
+```cpp
+// ❌ WRONG - runtime initialization
+const base::TimeDelta kAnimationDuration = base::Milliseconds(200);
+
+// ✅ CORRECT - compile-time constant
+constexpr base::TimeDelta kAnimationDuration = base::Milliseconds(200);
+```

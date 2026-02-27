@@ -374,3 +374,24 @@ function UserCard({ id }: Props) {
 ```
 
 The only valid exception is `React.Component` error boundaries, which still require a class component (`componentDidCatch` has no hook equivalent).
+
+---
+
+<a id="FE-025"></a>
+
+## ⚠️ Beware `||=` Short-Circuit When Replacing `|=`
+
+**Never replace `|=` with `||=` when the right-hand side has side effects.** The `||=` operator short-circuits: once the left side is truthy, the right side is never evaluated. If the right side calls a function with side effects, those effects will be silently skipped.
+
+```typescript
+// ❌ WRONG - fn() won't be called once isDirty is true
+isDirty ||= updateFileTimestamps(file)
+
+// ❌ ALSO WRONG - fn() skipped when isDirty is already true
+isDirty = isDirty || updateFileTimestamps(file)
+
+// ✅ CORRECT - function always executes, result accumulated
+isDirty = updateFileTimestamps(file) || isDirty
+```
+
+Place the side-effecting call on the LEFT side of `||` to guarantee it always runs.
