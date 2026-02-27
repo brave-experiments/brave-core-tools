@@ -30,13 +30,30 @@ This will:
 | `/commit` | Create atomic git commits |
 | `/force-push-downstream` | Force-push branch + all downstream branches |
 | `/impl-review` | Implement PR review feedback |
-| `/make-ci-green` | Re-run failed CI jobs |
+| `/make-ci-green` | Re-run failed CI jobs (requires env vars, see below) |
 | `/pr` | Create a pull request for the current branch |
 | `/preflight` | Run all preflight checks (format, build, test) |
 | `/rebase-downstream` | Rebase a tree of dependent branches |
 | `/review` | Code review (PR or local changes) |
-| `/top-crashers` | Query Backtrace for top crash data |
+| `/top-crashers` | Query Backtrace for top crash data (requires env vars, see below) |
 | `/uplift` | Cherry-pick fixes to beta/release branches |
+
+### Required Environment Variables
+
+Some skills require API keys or environment variables to be set (e.g., in your `.envrc`):
+
+**`/top-crashers`:**
+| Variable | Description |
+|----------|-------------|
+| `BACKTRACE_API_KEY` | Backtrace API token with `query:post` capability |
+| `BACKTRACE_PROJECT` | Backtrace project name (or pass `--project` argument) |
+
+**`/make-ci-green`:**
+| Variable | Description |
+|----------|-------------|
+| `JENKINS_BASE_URL` | Jenkins CI server base URL |
+| `JENKINS_USER` | Jenkins username |
+| `JENKINS_TOKEN` | Jenkins API token (from `$JENKINS_BASE_URL/me/configure`) |
 
 ### Best Practices
 
