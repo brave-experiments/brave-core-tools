@@ -4,7 +4,7 @@ This document is an index of best practices for the Brave Browser codebase, disc
 
 ## Nala / Leo Design System
 
-- **[Nala / Leo Design System](./docs/best-practices/nala.md)** - Android icons, Android color tokens, WebUI SVG icons, C++ vector icons
+- **[Nala / Leo Design System](./docs/best-practices/nala.md)** - Icons (Android, WebUI, C++), Android color tokens, Leo component usage
 
 ## Code & Architecture
 

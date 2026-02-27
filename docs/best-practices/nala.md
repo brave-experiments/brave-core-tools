@@ -1,12 +1,20 @@
 # Nala / Leo Design System Best Practices
 
 <a id="NA-001"></a>
+<a id="NA-003"></a>
+<a id="NA-004"></a>
 
-## ❌ Don't Add New Android Drawable Icons — Use Nala Icons
+## ❌ Don't Add Custom Icons — Use Leo/Nala Icons
 
-**When adding a new icon for Android, add it to `android/nala/icons.gni` instead of creating a new Android drawable resource.** The Nala icon system is the centralized way to manage Android icons. Bypassing it by adding raw drawable files leads to inconsistency, duplicates, and maintenance burden.
+**Always use the Leo/Nala icon system instead of adding new icon files.** Leo is the canonical icon source across all platforms. Bypassing it leads to inconsistency, duplicates, and maintenance burden.
 
 > **Reviewer note:** Tag `@nala-token-reviewers` when flagging this violation.
+
+<a id="NA-009"></a>
+
+### Android
+
+Add icons to `android/nala/icons.gni` instead of creating new drawable resources.
 
 ```gn
 # ❌ WRONG - adding a new drawable file directly
@@ -17,6 +25,38 @@
 nala_icons = [
   ...
   "ic_my_new_icon.xml",
+  ...
+]
+```
+
+<a id="NA-010"></a>
+
+### WebUI
+
+Add the icon name to the `leo_icons` array in `ui/webui/resources/BUILD.gn` instead of adding a new `.svg` file.
+
+```html
+<!-- ❌ WRONG - raw SVG file added to the WebUI directory -->
+<img src="my_icon.svg">
+
+<!-- ✅ CORRECT - Leo icon component (icon added to leo_icons in ui/webui/resources/BUILD.gn) -->
+<leo-icon name="my-icon-name"></leo-icon>
+```
+
+<a id="NA-011"></a>
+
+### C++ browser UI
+
+Add to the `leo_icons` array in `components/vector_icons/BUILD.gn` instead of creating a new `.icon` file.
+
+```gn
+# ❌ WRONG - new standalone vector icon file
+# components/vector_icons/my_new_icon.icon
+
+# ✅ CORRECT - add to the leo_icons list in components/vector_icons/BUILD.gn
+leo_icons = [
+  ...
+  "my-icon-name",
   ...
 ]
 ```
@@ -42,53 +82,18 @@ nala_icons = [
 
 ---
 
-<a id="NA-003"></a>
-
-## ❌ Don't Add New SVG Icon Files to WebUI — Use Leo Icons
-
-**When adding icons to a WebUI page, add the icon name to the `leo_icons` array in `ui/webui/resources/BUILD.gn` instead of adding a new `.svg` file.** Leo provides a design-system-approved icon set; raw SVG files bypass it and create visual inconsistency.
-
-```html
-<!-- ❌ WRONG - raw SVG file added to the WebUI directory -->
-<img src="my_icon.svg">
-
-<!-- ✅ CORRECT - Leo icon component (icon added to leo_icons in ui/webui/resources/BUILD.gn) -->
-<leo-icon name="my-icon-name"></leo-icon>
-```
-
----
-
-<a id="NA-004"></a>
-
-## ❌ Don't Add New Chromium Vector Icon Files — Add to `leo_icons` in BUILD.gn
-
-**When adding a new icon for use in C++ browser UI, add it to the `leo_icons` array in `components/vector_icons/BUILD.gn` instead of creating a new `.icon` file.** Leo is the canonical icon source; new standalone `.icon` files bypass the design system and create visual inconsistency.
-
-```gn
-# ❌ WRONG - new standalone vector icon file
-# components/vector_icons/my_new_icon.icon
-
-# ✅ CORRECT - add to the leo_icons list in components/vector_icons/BUILD.gn
-leo_icons = [
-  ...
-  "my-icon-name",
-  ...
-]
-```
-
----
-
 <a id="NA-005"></a>
+<a id="NA-006"></a>
 
-## ❌ Don't Use HTML elements when there's a relevant Nala component
+## ❌ Don't Use HTML Elements or Custom Components When Leo Provides Them
 
-**In WebUI React code, use Leo components from `@brave/leo/react/*` instead of native HTML elements.** Leo components are design-system-approved, theme-aware, and accessible. Using raw HTML elements produces visual inconsistency, bypasses Brave's design tokens, and requires manual accessibility work.
+**In WebUI React code, use Leo components from `@brave/leo/react/*` instead of native HTML elements or custom re-implementations.** Leo components are design-system-approved, theme-aware, and accessible. Using raw HTML or hand-rolling equivalents produces visual inconsistency, bypasses Brave's design tokens, and requires manual accessibility work.
 
 > **Reviewer note:** Tag `@nala-token-reviewers` when flagging this violation.
 
 <a id="NA-007"></a>
 
-### Common substitutions
+### Use Leo instead of native HTML elements
 
 | Instead of… | Use… |
 |---|---|
@@ -136,19 +141,11 @@ import Input from '@brave/leo/react/input'
 <Input value={value} onInput={e => setValue(e.detail.value)} />
 ```
 
----
-
-<a id="NA-006"></a>
-
-## ❌ Don't Reinvent Components That Already Exist in Leo
-
-**Before creating a custom React component, check whether Leo already provides it.** Custom re-implementations of Leo components add maintenance burden, deviate from the design system, and are often less accessible than the Leo originals.
-
-> **Reviewer note:** Tag `@nala-token-reviewers` when flagging this violation.
-
 <a id="NA-008"></a>
 
-### Components that are commonly reinvented — use Leo instead
+### Don't reinvent components that Leo already provides
+
+Before creating a custom React component, check whether Leo already provides it. Custom re-implementations add maintenance burden and are often less accessible than the Leo originals.
 
 | Don't build a custom… | Use… |
 |---|---|

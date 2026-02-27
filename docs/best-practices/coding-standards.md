@@ -548,7 +548,7 @@ void OnSomethingHappened() override {}
 
 ## ✅ Use Observer Pattern for UI Updates
 
-**Don't make service-layer queries to update UI directly.** Instead, trigger observer notifications and let the UI respond.
+**Don't make service-layer queries to update UI directly.** Instead, trigger observer notifications and let the UI respond. See also [ARCH-021](architecture.md#ARCH-021) for when to use observers vs. callbacks.
 
 ```cpp
 // ❌ WRONG - service making UI queries
