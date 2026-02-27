@@ -1,6 +1,6 @@
 # brave-core-tools
 
-Shared development tools, best practices, and Claude Code skills for [brave-core](https://github.com/AurWoworuntariawan/brave-core) development.
+Shared development tools, best practices, and Claude Code skills for [brave-core](https://github.com/AurWoworuntariawan/AurWoworuntariawan-brave-core/) development.
 
 ## Setup
 
@@ -52,7 +52,7 @@ This will:
 
 ```bash
 cd brave-core-tools
-git pull origin master
+git pull origin main
 ```
 
 Symlinks are stable across updates — no need to re-run setup.
