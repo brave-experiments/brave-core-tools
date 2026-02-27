@@ -1,0 +1,31 @@
+# Ignore directory - for local files that should not be tracked
+.ignore/
+
+# Claude settings - user-specific
+.claude/settings.local.json
+
+# Backup files
+*.backup
+*.bak
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# direnv
+.envrc
+
+__pycache__
