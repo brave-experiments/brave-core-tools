@@ -766,3 +766,46 @@ constexpr char kOllamaEndpoint[] = "http://localhost:11434";
 inline constexpr char kOllamaEndpoint[] = "http://localhost:11434";
 ```
 
+---
+
+<a id="BS-050"></a>
+
+## ❌ Never Add New Constants to `brave_constants.h`
+
+**The file `components/constants/brave_constants.h` is a legacy dumping ground.** Never add new constants there. Instead, place constants in a `common` target within the component that owns them.
+
+```gn
+# ❌ WRONG - adding to the legacy catch-all
+# components/constants/brave_constants.h
+inline constexpr char kGate3OAuthUrl[] = "...";
+
+# ✅ CORRECT - in the owning component's common target
+# components/brave_rewards/common/constants.h
+inline constexpr char kGate3OAuthUrl[] = "...";
+```
+
+If a constant (especially a URL) is shared across multiple components with no clear owner, place it in a `brave_domains` target.
+
+---
+
+<a id="BS-051"></a>
+
+## ✅ Forward Declarations Don't Need `BUILDFLAG` Guards
+
+**Only `#include` directives and actual usages need to be wrapped in `#if BUILDFLAG(...)` guards.** Forward declarations are harmless — they don't pull in dependencies and cost nothing at compile time if unused.
+
+```cpp
+// ❌ UNNECESSARY - guarding a forward declaration
+#if BUILDFLAG(ENABLE_BRAVE_AI_CHAT)
+class ContentAgentToolProvider;
+#endif
+
+// ✅ CORRECT - forward declaration needs no guard
+class ContentAgentToolProvider;
+
+// Guard the includes and usage instead:
+#if BUILDFLAG(ENABLE_BRAVE_AI_CHAT)
+#include "brave/browser/ai_chat/tools/content_agent_tool_provider.h"
+#endif
+```
+
