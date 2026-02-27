@@ -465,3 +465,51 @@ service->ForEach(base::DoNothing());  // FunctionRef<void(Item&)>
 // ✅ CORRECT - explicit lambda
 service->ForEach([](Item&) {});
 ```
+
+---
+
+<a id="CSM-029"></a>
+
+## ✅ Null-Check Return Values Before Dereferencing
+
+**Always null-check return values from methods that can return nullptr before dereferencing, even when the input argument seems valid.** A non-null ID or key does not guarantee the lookup will succeed — the underlying object may have been destroyed, removed, or never created. This is especially important for upstream Chromium APIs where lifecycle changes can happen without notice.
+
+```cpp
+// ❌ WRONG - GetTask() returns nullptr if task doesn't exist
+if (!task_id_.is_null()) {
+  actor_service_->GetTask(task_id_)->Pause(false);  // crash if task was removed
+}
+
+// ✅ CORRECT - null-check the return value
+if (!task_id_.is_null()) {
+  if (auto* task = actor_service_->GetTask(task_id_)) {
+    task->Pause(false);
+  }
+}
+```
+
+**Common Chromium APIs that return nullptr:** `GetTask()`, `FindWebContentsById()`, `FromWebContents()`, `FromBrowserContext()`, `GetTabById()`, `GetWindowById()`. When chaining method calls (`a->GetB()->DoC()`), always store the intermediate result and check it.
+
+---
+
+<a id="CSM-030"></a>
+
+## ❌ Don't Use a Variable After `std::move()`
+
+**Never read or use a variable after it has been `std::move()`-d.** After a move, the source object is in a valid but unspecified state — using it is undefined behavior for most types and a bug for all types. This includes using the variable later in the same function, even if the move is inside a branch.
+
+```cpp
+// ❌ WRONG - model_key used after move
+if (auto result = ParseEvent(params, std::move(model_key))) {
+  callback.Run(std::move(*result));
+}
+// ... later in the same function ...
+callback.Run(GenerationResultData(std::move(event), model_key));  // BUG: model_key was moved above
+
+// ✅ CORRECT - pass by const reference, let caller handle ownership
+if (auto event = ParseEvent(params)) {
+  callback.Run(GenerationResultData(std::move(*event), model_key));
+}
+```
+
+**Watch for:** `std::move()` on strings, vectors, unique_ptrs, or any movable type where the variable appears again later in the function. Even if the move is inside an `if`/`else` branch, a future refactor could change control flow and expose the bug.
