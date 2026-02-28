@@ -213,6 +213,7 @@ All applicable best practices checked. No violations found in the branch changes
 - **Read changed files in full** — don't just rely on the diff. Context matters.
 - **Don't flag false positives** — if unsure whether something is a violation, read more context. A false positive wastes developer time.
 - **Only flag new/modified code** — pre-existing violations in untouched code are out of scope.
+- **Only flag violations documented in the best practices.** Do not make claims based on general knowledge or assumptions. If the best practices docs don't contain a rule about something, don't flag it — even if you believe it to be true. Hallucinated rules (e.g., claiming an API is "deprecated" when no doc says so) erode trust.
 
 ### Be Specific and Actionable
 - Every violation must include file, line, and a concrete fix suggestion.
