@@ -331,6 +331,8 @@ For test fixes, focus on the async testing and test isolation docs. For code cha
 
 Only read the docs relevant to the PR's changes — don't load all of them every time.
 
+**CRITICAL: Only flag violations that are explicitly documented in the best practices.** Do NOT make claims based on general knowledge or assumptions about what "should" be a best practice. If the best practices docs do not contain a rule about something, do NOT flag it. Do NOT claim an API is "deprecated", a pattern is "banned", or a function should be replaced unless the best practices doc explicitly says so. Every claim must be traceable to a specific rule you read. Hallucinated rules erode developer trust.
+
 ### Timing-Based "Fixes" (AUTOMATIC FAIL)
 
 If the fix works by altering execution timing rather than adding proper synchronization:
@@ -578,6 +580,7 @@ If no issues: "None - changes look ready for PR."
 - Don't just look at the diff in isolation
 - Check related files, headers, and tests
 - For chromium_src changes, also read the upstream Chromium file
+- **Before each review comment, verify your claims by reading the relevant source code in `src/brave/` and `src/`.** Do not make assertions about APIs, patterns, deprecations, or behavior without first confirming them in the actual codebase. Look at how the API/pattern is used elsewhere, check header files for documentation, and read upstream Chromium code when relevant. Every comment you make should be grounded in what the code actually says, not assumptions.
 
 ### Local by Default
 

@@ -213,6 +213,8 @@ All applicable best practices checked. No violations found in the branch changes
 - **Read changed files in full** — don't just rely on the diff. Context matters.
 - **Don't flag false positives** — if unsure whether something is a violation, read more context. A false positive wastes developer time.
 - **Only flag new/modified code** — pre-existing violations in untouched code are out of scope.
+- **Only flag violations documented in the best practices.** Do not make claims based on general knowledge or assumptions. If the best practices docs don't contain a rule about something, don't flag it — even if you believe it to be true. Hallucinated rules (e.g., claiming an API is "deprecated" when no doc says so) erode trust.
+- **Before each comment, verify your claims by reading relevant source code in `src/brave/` and `src/`.** Do not assert that an API is deprecated, a pattern is wrong, or a function should be replaced without first checking the actual codebase. Look at how the API/pattern is used elsewhere in the codebase, read header files and upstream Chromium code to confirm your understanding. Ground every comment in what the code actually says.
 
 ### Be Specific and Actionable
 - Every violation must include file, line, and a concrete fix suggestion.
