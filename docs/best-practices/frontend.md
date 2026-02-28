@@ -178,14 +178,6 @@ color: var(--leo-color-text-primary);
 
 ---
 
-<a id="FE-011"></a>
-
-## ✅ Use `I18nMixinLit` for Localization in Lit Components
-
-**In Lit-based WebUI components, use `I18nMixinLit` instead of calling `loadTimeData.getString()` directly.** The mixin provides consistent i18n patterns and is the standard approach.
-
----
-
 <a id="FE-012"></a>
 
 ## ✅ New UI Components Must Have Storybook Stories
@@ -260,32 +252,6 @@ if ('text' in value && 'role' in value) { ... }
 ## ✅ Document Exported TypeScript Types
 
 **Exported TypeScript types intended for use outside the component must have documentation comments** explaining their purpose. Complex union types and data shapes used as component APIs especially need explicit documentation for consumers.
-
----
-
-<a id="FE-019"></a>
-
-## ❌ Don't Add `translateable="true"` on GRD Strings
-
-**In `.grdp` string resource files, `translateable="true"` is the default.** Never add it explicitly. The tooling only looks for `translateable="false"` when excluding strings from translation.
-
----
-
-<a id="FE-020"></a>
-
-## ✅ Use Proper Ellipsis Characters in UI Strings
-
-**In user-facing strings, use the proper Unicode ellipsis character (`…`) instead of three periods (`...`).** This is a standard typographic convention for UI text.
-
----
-
-<a id="FE-021"></a>
-
-## ✅ Provide Sufficient Context in Localization String Descriptions
-
-**Localization string descriptions should contain enough context for translators who only see the description.** For example, "History" alone might be ambiguous across languages (browser history vs. event history). Add specifics like "Title for the browser visits history section of a URL picker".
-
-For simple, self-evident strings where the meaning is unambiguous in any language (e.g., "Summary", "Settings", "Cancel"), a brief description is fine — do not insist on verbose descriptions when the string speaks for itself.
 
 ---
 
