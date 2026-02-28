@@ -580,6 +580,7 @@ If no issues: "None - changes look ready for PR."
 - Don't just look at the diff in isolation
 - Check related files, headers, and tests
 - For chromium_src changes, also read the upstream Chromium file
+- **Before each review comment, verify your claims by reading the relevant source code in `src/brave/` and `src/`.** Do not make assertions about APIs, patterns, deprecations, or behavior without first confirming them in the actual codebase. Look at how the API/pattern is used elsewhere, check header files for documentation, and read upstream Chromium code when relevant. Every comment you make should be grounded in what the code actually says, not assumptions.
 
 ### Local by Default
 
