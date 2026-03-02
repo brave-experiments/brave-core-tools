@@ -1,5 +1,7 @@
 # Localization & String Resources
 
+Technical conventions for GRD/GRDP string resources, placeholders, and i18n patterns. For voice, capitalization, punctuation, product naming, and general writing style, see the [Brave Style Guide](./style-guide.md).
+
 <a id="L10N-001"></a>
 
 ## ❌ Don't Add `translateable="true"` on GRD Strings
@@ -217,4 +219,16 @@ html_source->AddString("learnMoreUrl", kLearnMoreURL);
 - Prepositions are appropriate for context (e.g., "in" vs. "on" for UI locations)
 
 This matters because translators use the English source as a reference, and errors propagate to translations.
+
+---
+
+<a id="L10N-017"></a>
+
+## ✅ Include UI Screenshots When Adding or Modifying Strings
+
+**When a PR adds or modifies user-facing strings, the developer must include a screenshot of the affected UI in the PR description.** This allows string reviewers to verify the string in context — checking for truncation, capitalization consistency, layout issues, and correct terminology. Screenshots should show the actual rendered UI, not just the GRD/GRDP diff.
+
+Do not add screenshots as inline code comments. Add them to the PR description body.
+
+See also: [Brave Style Guide](./style-guide.md) for voice, capitalization, punctuation, and product naming rules that apply to all user-facing strings.
 
