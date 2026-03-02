@@ -1,7 +1,7 @@
 ---
 name: commit
 description: "Commit changes without Co-Authored-By attribution. Creates logical, atomic commits."
-argument-hint: "[branch] [push]"
+argument-hint: "[branch|master] [push]"
 ---
 
 # Commit Without Attribution
@@ -15,11 +15,13 @@ Parse the arguments string for these keywords (order doesn't matter):
 | Keyword | Effect |
 |---------|--------|
 | `branch` | Create a new branch off the current branch before committing (descriptive name based on changes) |
+| `master` | Stay on current branch (default behavior, recognized so it doesn't cause an error) |
 | `push` | Push after all commits succeed |
 
 Examples:
 - `/commit` — commit on current branch, no push
 - `/commit push` — commit on current branch, then push
+- `/commit master push` — commit on current branch, then push
 - `/commit branch push` — create new branch, commit, then push
 - `/commit branch` — create new branch, commit, no push
 
