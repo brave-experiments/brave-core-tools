@@ -1032,3 +1032,11 @@ struct SearchResult {
   array<string> queries;  // Empty array = no queries
 };
 ```
+
+---
+
+<a id="ARCH-056"></a>
+
+## ❌ Don't Add New Code to `components/l10n/`
+
+**The `components/l10n/` directory is deprecated.** Use Chromium's built-in localization functionality instead. Do not add new files or classes to this directory. If no Chromium equivalent exists for your use case, discuss alternatives before resorting to `components/l10n/`.
