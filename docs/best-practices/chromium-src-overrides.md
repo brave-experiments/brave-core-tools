@@ -330,3 +330,29 @@ void PrivateHelper() { ... }  // Cannot override via chromium_src
 
 // ✅ Use a .patch file to modify PrivateHelper directly
 ```
+
+---
+
+<a id="CSRC-024"></a>
+
+## ⚠️ Override Replacement Strings Must Have Compatible Placeholders
+
+**When creating a Brave replacement string that is substituted for an upstream string via `#undef`/`#define`, the replacement string must have compatible placeholders.** The upstream code calling the string supplies specific placeholder values (`$1`, `$2`, etc.). If your replacement string has fewer placeholders, extras are silently ignored. If it has more or different placeholders, it can cause runtime errors. Always check what placeholders the upstream caller provides and match them.
+
+---
+
+<a id="CSRC-025"></a>
+
+## ✅ Guard Overridden String IDs with `#ifndef`/`#error`
+
+**When overriding an upstream string ID via `#undef`/`#define`, add a compile-time guard to detect if the upstream ID is removed or renamed during a rebase.** The `check_chromium_src.py` tool verifies symbols are still used in the overridden file, but a `#ifndef`/`#error` guard provides an additional safety net.
+
+```cpp
+// ✅ CORRECT - compile-time guard catches upstream removals
+#ifndef IDS_PASSWORD_MANAGER_UI_EMPTY_STATE_SYNCING_USERS
+#error "IDS_PASSWORD_MANAGER_UI_EMPTY_STATE_SYNCING_USERS is not defined"
+#endif
+#undef IDS_PASSWORD_MANAGER_UI_EMPTY_STATE_SYNCING_USERS
+#define IDS_PASSWORD_MANAGER_UI_EMPTY_STATE_SYNCING_USERS \
+  IDS_BRAVE_PASSWORD_MANAGER_UI_EMPTY_STATE
+```

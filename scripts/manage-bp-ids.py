@@ -28,6 +28,7 @@ DOC_PREFIXES = {
     "chromium-src-overrides": "CSRC",
     "documentation": "DOC",
     "frontend": "FE",
+    "localization": "L10N",
     "testing-async": "TA",
     "testing-isolation": "TI",
     "testing-javascript": "TJ",
