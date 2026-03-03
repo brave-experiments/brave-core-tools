@@ -76,9 +76,21 @@ is_ancestor_of() {
   # ancestors of $target. This catches cases where both local and origin
   # have been rebased (new commits) but the downstream branch still has
   # the old commits.
-  local old_sha
+  #
+  # IMPORTANT: Skip reflog entries that are ancestors of the current tip.
+  # After "git reset --hard <base> && git commit", the base SHA appears
+  # in the reflog and is an ancestor of every branch, causing every
+  # local branch to be falsely detected as a descendant. Only entries
+  # representing rewritten-away history (old tips not reachable from the
+  # current tip) should be checked.
+  local ref_tip old_sha
+  ref_tip=$(git rev-parse "$ref" 2>/dev/null) || return 1
   while IFS= read -r old_sha; do
     [[ -z "$old_sha" ]] && continue
+    # Skip if this SHA is reachable from current tip (not rewritten-away)
+    if git merge-base --is-ancestor "$old_sha" "$ref_tip" 2>/dev/null; then
+      continue
+    fi
     if git merge-base --is-ancestor "$old_sha" "$target" 2>/dev/null; then
       return 0
     fi
