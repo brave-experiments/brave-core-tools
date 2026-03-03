@@ -93,52 +93,141 @@ A file can match multiple categories (e.g., a `_browsertest.cc` is both C++ and 
 
 ---
 
-## Step 5: Systematic Best Practices Audit
+## Step 5: Chunk Documents and Launch Subagents in Parallel
 
-For each applicable best practices document, perform a focused audit:
+For each applicable best-practice document, run the chunking script to split it into groups of ~20 rules, then launch one **Agent subagent** (subagent_type: "general-purpose") per chunk. **Use multiple Agent tool calls in a single message** so they run in parallel. Pass the diff content (gathered in Step 3) directly in each subagent's prompt so they don't need to fetch it again.
 
-### Process for Each Document
+### Step 5.1: Chunk Each Document
 
-1. **Read the full document** from `./brave-core-tools/docs/best-practices/<doc>.md`
-2. **Read the changed files in full** to understand context (not just the diff)
-3. **Check each practice in the document against the diff**, one by one
-4. **Classify each practice** for this diff as:
-   - **VIOLATION**: The diff introduces code that violates this practice
-   - **PASS**: The diff includes code relevant to this practice and follows it correctly
-   - **N/A**: This practice doesn't apply to any code in the diff
+For each applicable document, run:
+```bash
+python3 ./brave-core-tools/.claude/skills/check-best-practices/chunk-best-practices.py \
+  ./brave-core-tools/docs/best-practices/<doc>.md
+```
 
-**Important:**
-- Only flag VIOLATION for code that is **newly introduced or modified** in the diff. Don't flag pre-existing code that wasn't touched.
-- Read surrounding code context to avoid false positives. A pattern that looks wrong in isolation may be correct in context.
-- Do not suggest renaming imported symbols (functions, classes, variables) that are defined outside the diff's changed files. The author cannot rename them without modifying the upstream module, which is out of scope.
-- For each violation, cite the specific practice title, the file and line, and what should change.
+This outputs JSON with one or more chunks per document. Each chunk contains:
+- `doc`: the source document filename
+- `chunk_index` / `total_chunks`: position within the document
+- `rule_count`: number of `##` rules in this chunk
+- `headings`: list of rule heading texts (for the audit trail)
+- `content`: the full text to pass to the subagent (includes the doc header + the chunk's rules)
 
-### Document Audit Order
+Small documents (<=20 rules) produce 1 chunk. Large documents are split evenly (e.g., 65 rules -> 3 chunks of 22+22+21). Launch one subagent per chunk.
 
-Audit documents in this order (most impactful first):
+### Step 5.2: Document Applicability Table
 
-1. **`coding-standards.md`** — if any C++ files changed
-2. **`coding-standards-memory.md`** — if any C++ files changed
-3. **`coding-standards-apis.md`** — if any C++ files changed
-4. **`testing-async.md`** — if any test files changed
-5. **`testing-isolation.md`** — if any test files changed
-6. **`testing-javascript.md`** — if tests use JS evaluation
-7. **`testing-navigation.md`** — if tests involve navigation
-8. **`architecture.md`** — if service/component architecture changed
-9. **`chromium-src-overrides.md`** — if chromium_src files changed
-10. **`build-system.md`** — if BUILD.gn/gni/DEPS files changed
-11. **`frontend.md`** — if TypeScript/React files changed
-12. **`android.md`** — if Java/Kotlin or android/ path files changed
-13. **`ios.md`** — if Swift or ios/ path files changed
-14. **`patches.md`** — if .patch files or patches/ path files changed
-15. **`nala.md`** — if icon/drawable/vector icon files changed
-16. **`documentation.md`** — if documentation or comments changed
+| Document | Condition |
+|----------|-----------|
+| `coding-standards.md` | has_cpp_files |
+| `coding-standards-memory.md` | has_cpp_files |
+| `coding-standards-apis.md` | has_cpp_files |
+| `architecture.md` | Always |
+| `documentation.md` | Always |
+| `build-system.md` | has_build_files |
+| `testing-async.md` | has_test_files |
+| `testing-javascript.md` | has_test_files |
+| `testing-navigation.md` | has_test_files |
+| `testing-isolation.md` | has_test_files |
+| `chromium-src-overrides.md` | has_chromium_src |
+| `frontend.md` | has_frontend_files |
+| `android.md` | has_android_files |
+| `ios.md` | has_ios_files |
+| `patches.md` | has_patch_files |
+| `nala.md` | has_nala_files |
+
+**Always launch at minimum:** architecture and documentation (apply to all changes).
 
 **Skip documents entirely if no changed files fall into their category.** Report which documents were skipped and why.
 
+### Step 5.3: Subagent Prompt
+
+Each subagent prompt MUST include:
+
+1. **The chunk content** — embed the `content` field from the chunking script output directly in the prompt. The subagent does NOT read any best practice files — all rules are provided inline:
+   ````
+   Here are the best practice rules to check:
+   ```markdown
+   <chunk content>
+   ```
+   ````
+2. **The diff content** — include the full diff text (gathered once in Step 3) directly in the prompt. The subagent MUST NOT re-gather the diff — it is already provided:
+   ````
+   Here is the diff to audit:
+   ```diff
+   <DIFF content>
+   ```
+   ````
+3. **The review rules**:
+   - Only flag violations in ADDED lines (+ lines), not existing code
+   - Also flag bugs introduced by the change (e.g., missing string separators, duplicate entries, code inside wrong `#if` guard)
+   - **Check surrounding context before making claims.** When a violation involves dependencies, includes, or patterns, the subagent should read the full file context to verify the claim is accurate
+   - Do not suggest renaming imported symbols defined outside the diff's changed files
+   - Do NOT flag: existing code the diff isn't changing, template functions defined in headers, simple inline getters in headers, style preferences not in the documented best practices, include/import ordering
+   - **Every claim must be verified in the provided best practices rules.** Do NOT make claims based on general knowledge. If the provided rules do not contain a rule about something, do NOT flag it as a violation
+4. **The systematic audit requirement** (Step 5.4 below)
+5. **Required output format** (Step 5.5 below)
+
+### Step 5.4: Systematic Audit Requirement
+
+**CRITICAL — this is what prevents the subagent from stopping after finding a few violations.**
+
+The subagent MUST work through its chunk **heading by heading**, checking every `##` rule against the diff. It must output an audit trail listing EVERY `##` heading in the chunk with a verdict:
+
+```
+AUDIT:
+PASS: Always Include What You Use (IWYU)
+PASS: Use Positive Form for Booleans and Methods
+N/A: Consistent Naming Across Layers
+FAIL: Don't Use rapidjson
+PASS: Use CHECK for Impossible Conditions
+... (one entry per ## heading in the chunk)
+```
+
+Verdicts:
+- **PASS**: Checked the diff — no violation found
+- **N/A**: Rule doesn't apply to the types of changes in this diff
+- **FAIL**: Violation found — must have a corresponding entry in VIOLATIONS
+
+This forces the model to explicitly consider every rule rather than satisficing after a few findings.
+
+### Step 5.5: Required Subagent Output Format
+
+Each subagent MUST return this structured format:
+
+```
+DOCUMENT: <document name> (chunk <chunk_index+1>/<total_chunks>)
+
+AUDIT:
+PASS: <rule heading>
+N/A: <rule heading>
+FAIL: <rule heading>
+... (one line per ## heading in the chunk)
+
+VIOLATIONS:
+- file: <path>, line: <line_number>, severity: <"high"|"medium"|"low">, rule: "<rule heading>", issue: <brief description>, fix: <what should be done instead>
+- ...
+NO_VIOLATIONS (if none found)
+
+Severity guide:
+- high: Correctness bugs, use-after-free, security issues, banned APIs, test reliability problems (e.g., RunUntilIdle)
+- medium: Substantive best practice violations (wrong container type, missing error handling, architectural issues)
+- low: Nits, style preferences, missing docs, naming suggestions, minor cleanup
+```
+
 ---
 
-## Step 6: Check the Quick Checklist
+## Step 6: Aggregate and Validate Subagent Results
+
+After ALL chunk subagents return:
+
+1. **Aggregate violations** from all chunk subagents into a single list, grouped by document
+2. **Aggregate audit trails** — merge the per-chunk AUDIT lines back into per-document summaries
+3. **Deep-dive validation** — before including each violation in the report, read the actual source file at and around the flagged line. Verify the claim is true in context. Drop false positives where the code is actually correct in its full context. This is NOT optional — subagents work only from the diff, which lacks surrounding context
+4. **Sort violations by severity**: high -> medium -> low
+
+---
+
+## Step 7: Check the Quick Checklist
 
 After the per-document audit, also check the quick checklist from `BEST-PRACTICES.md` if any async test code was changed:
 
@@ -158,7 +247,7 @@ After the per-document audit, also check the quick checklist from `BEST-PRACTICE
 
 ---
 
-## Step 7: Generate Report
+## Step 8: Generate Report
 
 ```markdown
 # Best Practices Audit: <branch-name>
