@@ -1107,6 +1107,19 @@ const auto result = DoComputation(index);
 
 This is a preference, not a hard rule — always prefix with `nit:` and do not insist if the developer declines.
 
+
+## ❌ Don't Commit Commented-Out Code
+
+**Remove commented-out code, dead `#include` lines, and development leftovers before merging.** Commented-out code adds noise, confuses future readers, and is never cleaned up. If the code might be needed later, it lives in version control history.
+
+```cpp
+// ❌ WRONG - dead code left in
+// #include "brave/components/old_feature/old_header.h"
+// void OldMethod() { ... }
+
+// ✅ CORRECT - remove entirely before merging
+```
+
 ---
 
 <a id="CS-065"></a>
@@ -1132,3 +1145,7 @@ void MigrateProfilePrefs(PrefService* prefs) {
   }
 }
 ```
+
+## ✅ Clean Up All Dead Code When Removing Features
+
+**When removing a feature flag, model, or script, also remove all associated dead code:** unused helper functions, orphaned UI strings from `.grdp` files, related constants, and utility functions that were only referenced by the removed code. Leaving dead code behind creates maintenance burden and confusion.

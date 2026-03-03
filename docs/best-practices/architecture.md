@@ -1062,6 +1062,24 @@ struct SearchResult {
 - Profile-scoped features use `KeyedServiceFactory` with proper `DependsOn` declarations
 - Global features are rare; most features should be profile-scoped or narrower
 
+## ✅ Swap-and-Process for Reentrancy Protection
+
+**When processing a queue of pending callbacks or items, swap the queue into a local variable before iterating.** This protects against reentrancy — if processing an item triggers code that adds new items to the queue, those new items won't be processed in the current iteration and won't cause infinite loops.
+
+```cpp
+// ❌ WRONG - reentrancy can corrupt the iteration
+for (auto& callback : pending_callbacks_) {
+  std::move(callback).Run();  // might add to pending_callbacks_!
+}
+pending_callbacks_.clear();
+
+// ✅ CORRECT - swap-and-process
+auto callbacks = std::exchange(pending_callbacks_, {});
+for (auto& callback : callbacks) {
+  std::move(callback).Run();  // safe, iterating local copy
+}
+```
+
 ---
 
 <a id="ARCH-058"></a>
@@ -1081,6 +1099,24 @@ class FooTabFeature {
   raw_ref<tabs::TabInterface> tab_;
   // To access the current window: tab_->GetBrowserWindowInterface()
 };
+
+## ✅ Guard `base::BarrierCallback` Against Zero Count
+
+**`base::BarrierCallback` with zero invocations will never call its done callback.** Always check for the zero case before constructing a `BarrierCallback`, or handle it with an early return.
+
+```cpp
+// ❌ WRONG - done_callback never fires if items is empty
+auto barrier = base::BarrierCallback<Result>(items.size(), done_callback);
+for (const auto& item : items) {
+  FetchAsync(item, barrier);
+}
+
+// ✅ CORRECT - handle empty case
+if (items.empty()) {
+  std::move(done_callback).Run({});
+  return;
+}
+auto barrier = base::BarrierCallback<Result>(items.size(), std::move(done_callback));
 ```
 
 ---
@@ -1108,6 +1144,10 @@ class MyServiceFactory : public ProfileKeyedServiceFactory {
 ```
 
 For tab/window features, create them in `TabFeatures::Init()` or `BrowserWindowFeatures::Init()` respectively.
+
+## ✅ New P3A Metrics Require Privacy Review
+
+**When adding new p3a (privacy-preserving analytics) metrics, post a brief description of the new metrics in the p3a Slack channel for privacy review before merging.** P3A metrics have strict privacy requirements and must be reviewed by the analytics team.
 
 ---
 
@@ -1314,3 +1354,7 @@ auto override = tabs::TabFeatures::GetUserDataFactoryForTesting()
 ```
 
 This avoids `BrowserWithTestWindowTest` (which Chromium discourages for production features) and enables testing with real browser infrastructure.
+
+## ✅ Preference Keys Must Be Correct Before Shipping
+
+**Preference keys that get persisted to disk must be spelled correctly before the first release that includes them.** Changing a preference key after it ships requires a migration path to avoid losing user data. Double-check key strings during review.

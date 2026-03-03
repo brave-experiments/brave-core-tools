@@ -379,3 +379,85 @@ Place the side-effecting call on the LEFT side of `||` to guarantee it always ru
 ```
 
 Once the page's JavaScript loads and Leo tokens are initialized, the themed value takes over naturally. The hardcoded value is only visible during the brief initial paint.
+
+## ✅ Wrap `JSON.parse` in Try/Catch in React Render Paths
+
+**`JSON.parse` calls on external or server data in React render paths (including `useMemo`) must be wrapped in `try/catch`.** Malformed JSON will throw a `SyntaxError` that crashes the entire component tree if uncaught.
+
+```tsx
+// ❌ WRONG - crashes component on malformed JSON
+const config = useMemo(() => JSON.parse(rawData), [rawData])
+
+// ✅ CORRECT - graceful fallback
+const config = useMemo(() => {
+  try {
+    return JSON.parse(rawData)
+  } catch {
+    return defaultConfig
+  }
+}, [rawData])
+```
+
+---
+
+<a id="FE-027"></a>
+
+## ❌ Don't Use `render().toBeTruthy()` in React Tests
+
+**`render()` always returns a truthy object, so `expect(render(<Component />)).toBeTruthy()` always passes.** Assert on actual rendered content instead.
+
+```tsx
+// ❌ WRONG - always passes, tests nothing
+expect(render(<MyComponent />)).toBeTruthy()
+
+// ✅ CORRECT - verify actual content
+const { getByText } = render(<MyComponent />)
+expect(getByText('Expected text')).toBeTruthy()
+```
+
+---
+
+<a id="FE-028"></a>
+
+## ❌ Avoid `dangerouslySetInnerHTML` for External Content
+
+**Do not use `dangerouslySetInnerHTML` to render HTML from external or untrusted sources.** Instead, parse the data and render known safe elements using React components. If raw HTML rendering is unavoidable, sanitize it first and request a security review.
+
+---
+
+<a id="FE-029"></a>
+
+## ✅ Clean Up Async Operations in React `useEffect`
+
+**Async operations started in `useEffect` must be properly cleaned up to prevent state updates on unmounted components.** Use `AbortController` or a ref-based cancellation flag.
+
+```tsx
+// ❌ WRONG - no cleanup, state update on unmounted component
+useEffect(() => {
+  fetchData().then(setData)
+}, [])
+
+// ✅ CORRECT - AbortController cleanup
+useEffect(() => {
+  const controller = new AbortController()
+  fetchData({ signal: controller.signal }).then(setData)
+  return () => controller.abort()
+}, [])
+```
+
+---
+
+<a id="FE-030"></a>
+
+## ✅ Use Nala Design Tokens Directly — No Intermediate Aliases
+
+**Use Nala design tokens directly at call sites instead of defining intermediate color token aliases.** Wrapper tokens like `kColorSidebarPanelHeaderBackground` that just map to a Nala token add indirection without value.
+
+```cpp
+// ❌ WRONG - unnecessary alias
+mixer[kColorSidebarPanelHeaderBackground] = {nala::kColorPageBackground};
+// Then using kColorSidebarPanelHeaderBackground elsewhere
+
+// ✅ CORRECT - use the Nala token directly
+mixer[kColorToolbar] = {nala::kColorPageBackground};
+```

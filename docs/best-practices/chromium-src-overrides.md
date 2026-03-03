@@ -356,3 +356,23 @@ void PrivateHelper() { ... }  // Cannot override via chromium_src
 #define IDS_PASSWORD_MANAGER_UI_EMPTY_STATE_SYNCING_USERS \
   IDS_BRAVE_PASSWORD_MANAGER_UI_EMPTY_STATE
 ```
+
+---
+
+<a id="CSRC-026"></a>
+
+## ✅ Fallback Methods Must Call the Correct Base Class
+
+**When overriding a chromium_src fallback method, ensure the fallback calls the correct base class method.** A common bug is calling the wrong superclass method (e.g., calling `ChromeTypographyProvider::Method()` when the override class uses a `#define` rename that changes the class hierarchy).
+
+```cpp
+// ❌ WRONG - calls wrong base class (should be ChromiumImpl, not original)
+SkColor BraveProvider::GetColor(int id) {
+  return ChromeTypographyProvider::GetColor(id);  // wrong!
+}
+
+// ✅ CORRECT - calls the right base class
+SkColor BraveProvider::GetColor(int id) {
+  return ChromiumImpl::GetColor(id);  // correct fallback
+}
+```

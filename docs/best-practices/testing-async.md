@@ -245,3 +245,23 @@ base::RunLoop run_loop;
 object_under_test.DoSomethingAsync(run_loop.QuitClosure());
 run_loop.Run();  // Waits specifically for this closure
 ```
+
+---
+
+<a id="TA-012"></a>
+
+## ✅ Wait for Mojo Completion Before EvalJs Assertions
+
+**In browser tests, do not call `EvalJs` immediately after an async Mojo operation to check its effects.** The mojo message may not have been processed yet. Use polling (`RunUntil` with a C++ state check) or a `TestFuture` to synchronize on the mojo response before asserting via JavaScript.
+
+```cpp
+// ❌ WRONG - EvalJs races with pending mojo response
+service->UpdateSettings(new_settings);
+EXPECT_EQ(true, content::EvalJs(web_contents, "isSettingEnabled()"));
+
+// ✅ CORRECT - wait for mojo to complete first
+base::test::TestFuture<bool> future;
+service->UpdateSettings(new_settings, future.GetCallback());
+EXPECT_TRUE(future.Get());
+EXPECT_EQ(true, content::EvalJs(web_contents, "isSettingEnabled()"));
+```

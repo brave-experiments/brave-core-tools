@@ -662,3 +662,44 @@ TEST(MyUtilsTest, ParsesValidInput) {
   EXPECT_EQ(Parse("abc"), "abc");
 }
 ```
+
+---
+
+<a id="TI-037"></a>
+
+## ✅ Use `NOTREACHED()` with Request Body in Test Mock Server Handlers
+
+**In test mock servers and URL interceptors, use `NOTREACHED() << request.content` (or equivalent) as the default handler to catch unhandled requests.** This makes test failures immediately obvious and includes the request body in the failure message for debugging.
+
+```cpp
+// ❌ WRONG - silently returns empty response for unhandled requests
+std::unique_ptr<HttpResponse> HandleRequest(const HttpRequest& request) {
+  if (request.relative_url == "/api/v1") { return MakeResponse(); }
+  return nullptr;  // silent failure
+}
+
+// ✅ CORRECT - fail loudly on unhandled requests
+std::unique_ptr<HttpResponse> HandleRequest(const HttpRequest& request) {
+  if (request.relative_url == "/api/v1") { return MakeResponse(); }
+  NOTREACHED() << "Unhandled request: " << request.relative_url
+               << " body: " << request.content;
+}
+```
+
+---
+
+<a id="TI-038"></a>
+
+## ✅ Use Descriptive Test Method Names
+
+**Test method names should be long and descriptive enough to explain the scenario without reading the test body.** Do not sacrifice clarity to save characters. Long names are preferable to short, cryptic names.
+
+```cpp
+// ❌ WRONG - too terse
+TEST_F(WalletServiceTest, TestSend) { ... }
+TEST_F(WalletServiceTest, Error) { ... }
+
+// ✅ CORRECT - self-documenting
+TEST_F(WalletServiceTest, SendTransaction_ReturnsErrorForInsufficientBalance) { ... }
+TEST_F(WalletServiceTest, GetTokenBalances_HandlesNetworkTimeoutGracefully) { ... }
+```

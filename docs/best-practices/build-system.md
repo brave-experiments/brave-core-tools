@@ -809,3 +809,11 @@ class ContentAgentToolProvider;
 #endif
 ```
 
+---
+
+<a id="BS-052"></a>
+
+## ❌ Don't Use Compound Buildflags (Channel + Platform + Official)
+
+**Do not create buildflags that combine channel, platform, and official_build conditions** (e.g., enabled only on nightly + desktop + official). These compound flags break during branch migration (nightly → beta → release) and create configurations that are nearly impossible to test locally. Use separate, independently testable flags instead.
+
