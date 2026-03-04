@@ -18,7 +18,7 @@ CURRENT_DIR=$(pwd)
 ```
 
 - **If within `brave-core-tools`**: `TOOLS_DIR="."`
-- **If within `src/brave`**: `TOOLS_DIR="./brave-core-tools"` (or find it)
+- **If within `src/brave`**: `TOOLS_DIR="./brave-core-tools"` (or find it traversing up the directories. it could be a sibling of src/)
 - **Otherwise**: Look for `BEST-PRACTICES.md` to locate the tools directory
 
 Set `DOCS_DIR="$TOOLS_DIR/docs/best-practices"`.
