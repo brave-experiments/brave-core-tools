@@ -91,6 +91,16 @@ base::flat_map<std::string, int> lookup_;
 std::map<std::string, int> large_mutable_lookup_;
 ```
 
+**Pointer stability:** If you need stable pointers to values, wrap them in `std::unique_ptr` inside an `absl::flat_hash_map`. If you need stable pointers to keys, use `absl::node_hash_map`/`absl::node_hash_set` (separate node allocation).
+
+```cpp
+// ✅ CORRECT - value pointer stability via unique_ptr wrapping
+absl::flat_hash_map<Key, std::unique_ptr<Value>> stable_values;
+
+// ✅ CORRECT - key pointer stability via node hash
+absl::node_hash_map<std::string, int> stable_keys;
+```
+
 **Also banned:** `absl::btree_map`/`absl::btree_set` (significant code size penalties in Chromium). See [Chromium container guidelines](https://chromium.googlesource.com/chromium/src/+/HEAD/base/containers/README.md).
 
 ---
@@ -1228,3 +1238,23 @@ for (int i = 0; i < vec.size(); ++i) { ... }
 size_t count = vec.size();
 for (size_t i = 0; i < vec.size(); ++i) { ... }
 ```
+
+---
+
+<a id="CSA-068"></a>
+
+## ✅ Use Transparent Comparisons for `base::flat_map` String Lookups
+
+**`base::flat_map` and `base::flat_set` support transparent comparisons, enabling lookups with `std::string_view` or `const char*` without constructing temporary `std::string` objects.** This avoids unnecessary heap allocations on lookups.
+
+```cpp
+// ❌ WRONG - operator[] constructs a temporary std::string
+base::flat_map<std::string, int> map;
+int val = map["key"];  // temporary std::string("key") created
+
+// ✅ CORRECT - find() uses transparent comparison, no temporary
+base::flat_map<std::string, int> map;
+auto it = map.find("key");  // no temporary string created
+```
+
+For `base::flat_set` of `std::unique_ptr`, use `base::UniquePtrComparator` for transparent lookups by raw pointer. See [Chromium container guidelines](https://chromium.googlesource.com/chromium/src/+/HEAD/base/containers/README.md).
