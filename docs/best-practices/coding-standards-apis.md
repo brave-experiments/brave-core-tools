@@ -67,16 +67,21 @@ static void RegisterJSONConverter(
 
 ## ✅ Use `base::flat_map` Over `std::map` and `std::unordered_map`
 
-**Chromium's container guidelines recommend avoiding `std::unordered_map` and `std::map`.** Use `base::flat_map` as the default choice for associative containers. It has better cache locality and lower overhead for small-to-medium sizes. See `base/containers/README.md` for guidance.
+**Chromium's container guidelines recommend avoiding `std::unordered_map` and `std::map`.** Use `base::flat_map` as the default choice for associative containers. It has better cache locality and lower overhead for small-to-medium sizes (~100 elements or fewer). See `base/containers/README.md` for guidance.
+
+**When to prefer `std::map`:** Use `std::map` when the collection exceeds ~100 elements or has frequent insertions/deletions. `base::flat_map` is a sorted vector, so inserts and erases are O(n) due to element shifting, while `std::map` provides O(log n) for all operations. Batch-mutating a large `base::flat_map` (e.g., inserting N items) is O(n²) vs O(n log n) with `std::map`.
 
 ```cpp
 // ❌ WRONG
 std::unordered_map<std::string, double> feature_map_;
 std::map<std::string, int> lookup_;
 
-// ✅ CORRECT
+// ✅ CORRECT - small/medium, read-heavy
 base::flat_map<std::string, double> feature_map_;
 base::flat_map<std::string, int> lookup_;
+
+// ✅ ALSO CORRECT - large or mutation-heavy
+std::map<NodeId, NodeId> ancestor_cache_;  // hundreds of entries, frequent bulk updates
 ```
 
 ---
