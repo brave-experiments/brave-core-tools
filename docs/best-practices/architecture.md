@@ -1040,3 +1040,169 @@ struct SearchResult {
 ## ❌ Don't Add New Code to `components/l10n/`
 
 **The `components/l10n/` directory is deprecated.** Use Chromium's built-in localization functionality instead. Do not add new files or classes to this directory. If no Chromium equivalent exists for your use case, discuss alternatives before resorting to `components/l10n/`.
+
+---
+
+<a id="ARCH-057"></a>
+
+## ✅ Match Feature Scope to the Correct Ownership Primitive
+
+**Every feature must be scoped to exactly one of four ownership primitives: Tab, Browser Window, Profile, or Global.** Choose the narrowest scope that fits the feature's data and lifetime requirements. See [Chromium Browser Design Principles](https://chromium.googlesource.com/chromium/src/+/main/docs/chrome_browser_design_principles.md).
+
+| Scope | Owner | Examples |
+|-------|-------|----------|
+| **Tab** | `TabFeatures` | Find-in-page, print preview, page actions |
+| **Browser Window** | `BrowserWindowFeatures` | Omnibox, bookmarks bar, vertical tabs |
+| **Profile** | `BrowserContextKeyedServiceFactory` | Rewards, Wallet, sync services |
+| **Global** | `GlobalFeatures` | Process-wide features spanning profiles |
+
+**Rules:**
+- Tab-scoped features must not store browser-window state (tabs can move between windows)
+- Browser-window-scoped features must not store profile state (multiple windows can share a profile)
+- Profile-scoped features use `KeyedServiceFactory` with proper `DependsOn` declarations
+- Global features are rare; most features should be profile-scoped or narrower
+
+---
+
+<a id="ARCH-058"></a>
+
+## ❌ Don't Store Window-Scoped State on Tab-Scoped Objects
+
+**Tab-scoped features must never hold references to browser-window-level objects.** Tabs can move between browser windows (drag-and-drop, "move to new window"), so storing a `Browser*` or `BrowserWindowInterface*` on a tab feature causes use-after-free or stale-reference bugs.
+
+```cpp
+// ❌ WRONG - tab feature holding a browser pointer
+class FooTabFeature {
+  raw_ptr<Browser> browser_;  // Stale when tab moves to another window!
+};
+
+// ✅ CORRECT - tab feature holds only tab-scoped dependencies
+class FooTabFeature {
+  raw_ref<tabs::TabInterface> tab_;
+  // To access the current window: tab_->GetBrowserWindowInterface()
+};
+```
+
+---
+
+<a id="ARCH-059"></a>
+
+## ❌ Avoid Lazy Instantiation of Features
+
+**Features should be eagerly created with explicit lifetime management, not lazily instantiated on first use.** Lazy instantiation causes inconsistent initialization order between production and tests, making bugs hard to reproduce.
+
+```cpp
+// ❌ WRONG - lazy instantiation
+MyService* MyServiceFactory::GetForProfile(Profile* profile) {
+  // Created on first call; tests may never call this
+  return static_cast<MyService*>(
+      GetInstance()->GetServiceForBrowserContext(profile, /*create=*/true));
+}
+
+// ✅ CORRECT - eager creation via ServiceIsCreatedWithBrowserContext
+class MyServiceFactory : public ProfileKeyedServiceFactory {
+  bool ServiceIsCreatedWithBrowserContext() const override {
+    return true;  // Created when profile is created
+  }
+};
+```
+
+For tab/window features, create them in `TabFeatures::Init()` or `BrowserWindowFeatures::Init()` respectively.
+
+---
+
+<a id="ARCH-060"></a>
+
+## ✅ Callback Execution Must Be Consistently Sync or Async
+
+**For a given callback, execution must be either always synchronous or always asynchronous — never sometimes one and sometimes the other.** Mixed sync/async execution creates subtle bugs because callers cannot reason about when their callback will run.
+
+```cpp
+// ❌ WRONG - sometimes sync, sometimes async
+void FetchData(Callback cb) {
+  if (cache_.contains(key)) {
+    cb.Run(cache_[key]);  // Sync!
+  } else {
+    network_->Fetch(key, std::move(cb));  // Async!
+  }
+}
+
+// ✅ CORRECT - always async
+void FetchData(Callback cb) {
+  if (cache_.contains(key)) {
+    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE, base::BindOnce(std::move(cb), cache_[key]));
+  } else {
+    network_->Fetch(key, std::move(cb));
+  }
+}
+```
+
+---
+
+<a id="ARCH-061"></a>
+
+## ❌ Avoid Re-entrancy; Localize Control Flow
+
+**Control flow should remain as localized as possible.** Pass all relevant state as parameters rather than querying non-local state mid-execution. Re-entrant code (where a callback triggers another call back into the same object) is error-prone and hard to reason about.
+
+```cpp
+// ❌ WRONG - querying non-local state mid-operation
+void ProcessItem(int id) {
+  auto item = global_registry_->GetItem(id);  // Non-local state
+  auto config = settings_manager_->GetConfig();  // More non-local state
+  DoWork(item, config);
+}
+
+// ✅ CORRECT - all state passed as parameters
+void ProcessItem(const Item& item, const Config& config) {
+  DoWork(item, config);
+}
+```
+
+If re-entrancy is unavoidable, document it clearly and use guards (e.g., `base::AutoReset`) to prevent infinite recursion.
+
+---
+
+<a id="ARCH-062"></a>
+
+## ✅ Every UI Feature Needs a CUJ Test
+
+**Every UI feature should have at least one Critical User Journey (CUJ) test** using `InteractiveBrowserTest`. Avoid change-detector unit tests that merely verify production code structure; instead validate behavior across common and edge cases.
+
+```cpp
+// ❌ WRONG - change detector test
+TEST_F(MyFeatureTest, ButtonExists) {
+  EXPECT_NE(nullptr, view->GetButtonByID(kMyButton));
+}
+
+// ✅ CORRECT - CUJ test validating user-visible behavior
+IN_PROC_BROWSER_TEST_F(MyFeatureInteractiveTest, UserCanToggleFeature) {
+  // Navigate, click the button, verify the feature state changed
+  RunTestSequence(
+      PressButton(kMyButton),
+      WaitForShow(kResultView),
+      CheckViewProperty(kResultView, &views::Label::GetText, u"Enabled"));
+}
+```
+
+---
+
+<a id="ARCH-063"></a>
+
+## ❌ Avoid Global Functions That Access Non-Global State
+
+**Global functions (free functions, static methods) should not access non-global state.** If a function needs profile-specific or window-specific data, it should receive that data as a parameter rather than reaching into global registries.
+
+```cpp
+// ❌ WRONG - global function reaching into non-global state
+bool IsFeatureReady() {
+  auto* profile = ProfileManager::GetLastUsedProfile();
+  return MyServiceFactory::GetForProfile(profile)->IsReady();
+}
+
+// ✅ CORRECT - caller provides the dependency
+bool IsFeatureReady(MyService* service) {
+  return service->IsReady();
+}
+```
