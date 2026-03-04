@@ -222,7 +222,7 @@ After ALL chunk subagents return:
 
 1. **Aggregate violations** from all chunk subagents into a single list, grouped by document
 2. **Aggregate audit trails** — merge the per-chunk AUDIT lines back into per-document summaries
-3. **Deep-dive validation** — before including each violation in the report, read the actual source file at and around the flagged line. Verify the claim is true in context. Drop false positives where the code is actually correct in its full context. This is NOT optional — subagents work only from the diff, which lacks surrounding context
+3. **Deep-dive validation** — before including each violation in the report, read the actual source file at and around the flagged line. Verify the claim is true in context. Drop false positives where the code is actually correct in its full context. This is NOT optional — subagents work only from the diff, which lacks surrounding context. **Deprecation claims require header verification:** if a violation claims an API is deprecated, read the actual header file that declares the API and confirm a deprecation notice exists. Do not rely on training data — APIs change across chromium upgrades and assumptions are frequently wrong.
 4. **Sort violations by severity**: high -> medium -> low
 
 ---

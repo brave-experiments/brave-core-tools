@@ -1109,6 +1109,8 @@ TEST(MyExtractorTest, ExtractsCorrectly) { ... }
 
 **When an API is marked deprecated, never introduce new uses.** Check headers for deprecation notices before using unfamiliar APIs.
 
+**Reviewer note:** To flag a violation of this rule, you MUST read the actual header file that declares the API and confirm a deprecation notice exists in the current source tree. Do not rely on memory or training data — APIs change across chromium upgrades and assumptions about what is or isn't deprecated are frequently wrong.
+
 ```cpp
 // ❌ WRONG - base::Hash deprecated for 6+ years
 uint32_t hash = base::Hash(str);
