@@ -156,7 +156,7 @@ std::string user_name;
 
 - **Opening brace** goes at the end of the previous line (K&R style)
 - **Continuation lines** should be indented 4 spaces
-- **No `{}` when not required** in C++ (e.g., single-line if/for bodies)
+- **No `{}` when not required** in C++ (e.g., single-line if/for bodies) — **Note:** This is a Brave-specific deviation from upstream Chromium, which requires `{}` braces on all conditionals and loops. Follow Brave convention.
 - **Do NOT enforce include order** — include ordering is handled by code formatting tools and lint, not by code review
 
 ---
@@ -450,6 +450,8 @@ Also: don't add unnecessary DCHECKs. For example, `DCHECK(g_browser_process)` is
 ## ✅ `NOTREACHED`/`CHECK(false)` Only for Security-Critical Invariants
 
 **`NOTREACHED`/`CHECK(false)` should only crash the browser for security-critical invariants.** For non-security cases (like invalid enum values from data processing), prefer returning `std::optional`/`std::nullopt` or a default value.
+
+**Important:** `NOTREACHED()` is now fatal in all builds and terminates control flow. The compiler treats code after `NOTREACHED()` as dead code. Do not place executable statements after it. See [Chromium style guide](https://chromium.googlesource.com/chromium/src/+/HEAD/styleguide/c++/c++.md).
 
 ```cpp
 // ❌ WRONG - crashes browser for non-security enum mismatch

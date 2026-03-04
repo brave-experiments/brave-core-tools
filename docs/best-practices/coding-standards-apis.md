@@ -65,24 +65,33 @@ static void RegisterJSONConverter(
 
 <a id="CSA-005"></a>
 
-## ✅ Use `base::flat_map` Over `std::map` and `std::unordered_map`
+## ✅ Use the Right Associative Container
 
-**Chromium's container guidelines recommend avoiding `std::unordered_map` and `std::map`.** Use `base::flat_map` as the default choice for associative containers. It has better cache locality and lower overhead for small-to-medium sizes (~100 elements or fewer). See `base/containers/README.md` for guidance.
+**Chromium's container guidelines (`base/containers/README.md`) recommend specific containers for each use case.** `std::unordered_map`/`std::unordered_set` are banned.
 
-**When to prefer `std::map`:** Use `std::map` when the collection exceeds ~100 elements or has frequent insertions/deletions. `base::flat_map` is a sorted vector, so inserts and erases are O(n) due to element shifting, while `std::map` provides O(log n) for all operations. Batch-mutating a large `base::flat_map` (e.g., inserting N items) is O(n²) vs O(n log n) with `std::map`.
+**Default (unordered):** Use `absl::flat_hash_map` and `absl::flat_hash_set` for general-purpose needs. They provide the best all-around performance for both small and large datasets.
+
+**Sorted, write-once or small:** Use `base::flat_map`/`base::flat_set`. Good cache locality; O(n) mutations are fine for small collections or write-once containers.
+
+**Sorted, large, frequently-mutated:** Use `std::map`/`std::set`. O(log n) mutations matter at scale.
+
+**Compile-time lookup tables:** Use `base::MakeFixedFlatMap`/`base::MakeFixedFlatSet` (see [CSA-045](#CSA-045)).
 
 ```cpp
-// ❌ WRONG
+// ❌ WRONG - banned
 std::unordered_map<std::string, double> feature_map_;
-std::map<std::string, int> lookup_;
 
-// ✅ CORRECT - small/medium, read-heavy
-base::flat_map<std::string, double> feature_map_;
+// ✅ CORRECT - default unordered container
+absl::flat_hash_map<std::string, double> feature_map_;
+
+// ✅ CORRECT - sorted, small/write-once
 base::flat_map<std::string, int> lookup_;
 
-// ✅ ALSO CORRECT - large or mutation-heavy
-std::map<NodeId, NodeId> ancestor_cache_;  // hundreds of entries, frequent bulk updates
+// ✅ CORRECT - sorted, large, frequently mutated
+std::map<std::string, int> large_mutable_lookup_;
 ```
+
+**Also banned:** `absl::btree_map`/`absl::btree_set` (significant code size penalties in Chromium). See [Chromium container guidelines](https://chromium.googlesource.com/chromium/src/+/HEAD/base/containers/README.md).
 
 ---
 
@@ -1179,3 +1188,43 @@ class Config {
 ```
 
 **When reviewing:** Check what the `string_view` member is actually initialized from before flagging. Pref key constants and string literals have static lifetime and are safe.
+
+---
+
+<a id="CSA-066"></a>
+
+## ✅ Use `base::circular_deque` Over `std::deque`
+
+**Always use `base::circular_deque` (or `base::queue`/`base::stack`) instead of `std::deque` (or `std::queue`/`std::stack`).** The base versions have consistent memory usage across platforms and save code size. See [Chromium container guidelines](https://chromium.googlesource.com/chromium/src/+/HEAD/base/containers/README.md).
+
+```cpp
+// ❌ WRONG - platform-dependent behavior
+std::deque<int> items;
+std::queue<int> pending;
+std::stack<int> history;
+
+// ✅ CORRECT
+base::circular_deque<int> items;
+base::queue<int> pending;
+base::stack<int> history;
+```
+
+**Note:** `base::circular_deque` does not maintain stable iterators during mutations. Use `std::list` if stable iterators with constant-time insert/remove are required.
+
+---
+
+<a id="CSA-067"></a>
+
+## ✅ Use `size_t` for Sizes, Counts, and Indices
+
+**Use `size_t` for object sizes, allocation sizes, element counts, array offsets, and vector indices.** This prevents unnecessary casts with STL APIs. Public APIs should use `size_t` even if internals optimize with `uint32_t`. See [Chromium C++ style guide](https://chromium.googlesource.com/chromium/src/+/HEAD/styleguide/c++/c++.md).
+
+```cpp
+// ❌ WRONG - unnecessary casts
+int count = static_cast<int>(vec.size());
+for (int i = 0; i < vec.size(); ++i) { ... }
+
+// ✅ CORRECT
+size_t count = vec.size();
+for (size_t i = 0; i < vec.size(); ++i) { ... }
+```

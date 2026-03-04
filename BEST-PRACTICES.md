@@ -55,5 +55,9 @@ Before writing async tests, verify:
 
 - [Chromium Browser Design Principles](https://chromium.googlesource.com/chromium/src/+/main/docs/chrome_browser_design_principles.md) - Feature scoping, modularity, UI patterns, lifetime management
 - [Chromium C++ Testing Best Practices](https://www.chromium.org/chromium-os/developer-library/guides/testing/cpp-writing-tests/)
+- [Chromium C++ Style Guide](https://chromium.googlesource.com/chromium/src/+/HEAD/styleguide/c++/c++.md)
+- [Chromium Smart Pointer Guidelines](https://www.chromium.org/developers/smart-pointer-guidelines/)
+- [Chromium Container Guidelines](https://chromium.googlesource.com/chromium/src/+/HEAD/base/containers/README.md)
+- [Chromium Componentization Cookbook](https://www.chromium.org/developers/design-documents/cookbook/)
 - [Progress Log](./progress.txt) - Real examples from fixing intermittent tests
 - [Agent Instructions](./CLAUDE.md) - Full workflow and testing requirements
