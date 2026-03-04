@@ -513,3 +513,37 @@ if (auto event = ParseEvent(params)) {
 ```
 
 **Watch for:** `std::move()` on strings, vectors, unique_ptrs, or any movable type where the variable appears again later in the function. Even if the move is inside an `if`/`else` branch, a future refactor could change control flow and expose the bug.
+
+---
+
+<a id="CSM-031"></a>
+
+## ❌ Don't Pass Smart Pointers by Const Reference
+
+**Don't use `const std::unique_ptr<T>&` or `const scoped_refptr<T>&` as function parameters.** This forces heap allocation and couples callers to specific ownership semantics. Use a raw pointer (`T*`) or reference (`T&`) when the function doesn't modify ownership. See [Chromium smart pointer guidelines](https://www.chromium.org/developers/smart-pointer-guidelines/).
+
+```cpp
+// ❌ WRONG - forces callers to heap-allocate
+void Process(const std::unique_ptr<Foo>& foo);
+
+// ✅ CORRECT - raw pointer decouples ownership from allocation
+void Process(Foo* foo);
+
+// ✅ CORRECT - reference when non-null is required
+void Process(Foo& foo);
+```
+
+**Exception:** Lambda functions in STL algorithms operating on containers of smart pointers may need this pattern.
+
+---
+
+<a id="CSM-032"></a>
+
+## ❌ Avoid Reference-Counted Objects — Prefer Redesign
+
+**Reference-counted objects (`base::RefCounted`/`scoped_refptr`) make ownership and destruction order difficult to reason about, especially with multiple threads.** Prefer redesigning to use single ownership (`std::unique_ptr`). See [Chromium smart pointer guidelines](https://www.chromium.org/developers/smart-pointer-guidelines/).
+
+When refcounting seems necessary:
+- Restrict the class to a single thread/sequence
+- Use `PostTask()` to proxy calls to the correct thread
+- Use `base::BindOnce()` with `WeakPtr` for automatic cancellation on destruction
