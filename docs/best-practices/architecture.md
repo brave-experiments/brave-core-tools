@@ -1166,19 +1166,44 @@ If re-entrancy is unavoidable, document it clearly and use guards (e.g., `base::
 
 <a id="ARCH-062"></a>
 
-## ✅ Every UI Feature Needs a CUJ Test
+## ✅ Every UI Feature Needs a CUJ Test; Avoid Change Detector Tests
 
-**Every UI feature should have at least one Critical User Journey (CUJ) test** using `InteractiveBrowserTest`. Avoid change-detector unit tests that merely verify production code structure; instead validate behavior across common and edge cases.
+**Every UI feature should have at least one Critical User Journey (CUJ) test** using `InteractiveBrowserTest`. Do not use `BrowserWithTestWindowTest` — it forces `if (!browser_view)` test-only checks in production code. Use browser tests or unit tests with proper dependency injection instead.
+
+**Avoid change detector tests.** A change detector test is easy to spot because the test logic mirrors the production logic — it just calls the same method and checks the obvious result. These tests break whenever the implementation changes but catch no real bugs. The purpose of a unit test is to validate behavior across common and edge cases for code that has many possible valid inputs.
 
 ```cpp
-// ❌ WRONG - change detector test
+// ❌ WRONG - change detector test: test logic mirrors production logic
+class ShowButtonOnBrowserActivation : public BrowserActivationListener {
+  void ShowButton();
+  bool DidShowButton();
+  void BrowserDidActivate() override { ShowButton(); }
+};
+
+TEST(ShowButtonOnBrowserActivationTest, ShowButtonOnActivate) {
+  ShowButtonOnBrowserActivation listener;
+  listener.BrowserDidActivate();          // Just calls the method...
+  EXPECT_TRUE(listener.DidShowButton());  // ...and checks the obvious result
+}
+
+// ❌ WRONG - change detector test: verifying structure, not behavior
 TEST_F(MyFeatureTest, ButtonExists) {
   EXPECT_NE(nullptr, view->GetButtonByID(kMyButton));
 }
+```
 
-// ✅ CORRECT - CUJ test validating user-visible behavior
+```cpp
+// ✅ CORRECT - unit test: validates behavior across common and edge cases
+bool IsPrime(int input);
+TEST(Math, CheckIsPrime) {
+  EXPECT_TRUE(IsPrime(2));
+  EXPECT_TRUE(IsPrime(3));
+  EXPECT_FALSE(IsPrime(99));
+  EXPECT_FALSE(IsPrime(-2));
+}
+
+// ✅ CORRECT - CUJ test: validates user-visible behavior end-to-end
 IN_PROC_BROWSER_TEST_F(MyFeatureInteractiveTest, UserCanToggleFeature) {
-  // Navigate, click the button, verify the feature state changed
   RunTestSequence(
       PressButton(kMyButton),
       WaitForShow(kResultView),
