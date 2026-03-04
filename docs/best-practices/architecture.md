@@ -1206,3 +1206,86 @@ bool IsFeatureReady(MyService* service) {
   return service->IsReady();
 }
 ```
+
+---
+
+<a id="ARCH-064"></a>
+
+## ✅ Use Unowned User Data Pattern for Tab/Window Feature Retrieval
+
+**Tab-scoped and browser-window-scoped features should use the Unowned User Data pattern** to separate creation/lifetime management from retrieval. Features are owned by `TabFeatures` or `BrowserWindowFeatures` but retrieved via a static `From()` method on `TabInterface` or `BrowserWindowInterface`. See [Unowned User Data README](https://chromium.googlesource.com/chromium/src/+/main/ui/base/unowned_user_data/README.md).
+
+**Setup (~7 lines of boilerplate):**
+
+```cpp
+// In header:
+class MyTabFeature {
+ public:
+  DECLARE_USER_DATA(MyTabFeature)
+
+  explicit MyTabFeature(tabs::TabInterface* tab, /* other deps */);
+
+  static MyTabFeature* From(tabs::TabInterface* tab) {
+    return Get(tab->GetUnownedUserDataHost());
+  }
+
+ private:
+  ScopedUnownedUserData<MyTabFeature> scoped_unowned_user_data_;
+};
+
+// In .cc:
+DEFINE_USER_DATA(MyTabFeature)
+
+MyTabFeature::MyTabFeature(tabs::TabInterface* tab, /* other deps */)
+    : scoped_unowned_user_data_(tab->GetUnownedUserDataHost(), *this) {}
+```
+
+**Creation in TabFeatures::Init() or BrowserWindowFeatures::Init():**
+
+```cpp
+// Using the factory for testability:
+my_tab_feature_ = GetUserDataFactory().CreateInstance<MyTabFeature>(
+    tab,        // For the injection function
+    &tab, ...   // Normal constructor args
+);
+```
+
+**Production retrieval:**
+
+```cpp
+auto* feature = MyTabFeature::From(tab);
+```
+
+---
+
+<a id="ARCH-065"></a>
+
+## ✅ Use Factory Overrides for Integration Testing of Unowned User Data Features
+
+**For integration tests that need mock features in a live browser, use `GetUserDataFactoryForTesting().AddOverrideForTesting()`** to substitute a mock before browser initialization. For unit tests, attach features directly to a mock interface's `UnownedUserDataHost`.
+
+**Unit test — attach to mock interface:**
+
+```cpp
+ui::UnownedUserDataHost user_data_host_;
+testing::NiceMock<MockTabInterface> mock_tab_;
+
+EXPECT_CALL(mock_tab_, GetUnownedUserDataHost)
+    .WillRepeatedly(testing::ReturnRef(user_data_host_));
+
+// Feature attaches itself via ScopedUnownedUserData in constructor
+my_feature_.emplace(&mock_tab_, ...);
+```
+
+**Integration test — factory override for live browser:**
+
+```cpp
+// Install override BEFORE browser creation
+auto override = tabs::TabFeatures::GetUserDataFactoryForTesting()
+    .AddOverrideForTesting(
+        base::BindRepeating([](tabs::TabInterface& tab) {
+          return std::make_unique<MyTabFeatureMock>(&tab);
+        }));
+```
+
+This avoids `BrowserWithTestWindowTest` (which Chromium discourages for production features) and enables testing with real browser infrastructure.
