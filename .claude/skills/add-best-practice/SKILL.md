@@ -1,0 +1,207 @@
+---
+name: add-best-practice
+description: "Add a new best practice to the appropriate doc. Checks for duplicates, assigns stable IDs, creates new category docs if needed. Triggers on: add best practice, new best practice, add bp, new bp."
+argument-hint: "<best practice description>"
+allowed-tools: Bash(python3:*), Bash(git:*), Bash(gh:*), Bash(pwd:*), Bash(ls:*), Read, Grep, Glob, Edit, Write
+---
+
+# Add Best Practice
+
+Add a new best practice rule to the correct best-practices document. Ensures no duplicates, assigns stable IDs, and follows the exact format of existing entries.
+
+---
+
+## Step 1: Detect Working Directory
+
+```bash
+CURRENT_DIR=$(pwd)
+```
+
+- **If within `brave-core-tools`**: `TOOLS_DIR="."`
+- **If within `src/brave`**: `TOOLS_DIR="./brave-core-tools"` (or find it)
+- **Otherwise**: Look for `BEST-PRACTICES.md` to locate the tools directory
+
+Set `DOCS_DIR="$TOOLS_DIR/docs/best-practices"`.
+
+---
+
+## Step 2: Understand the Best Practice
+
+Parse the argument to understand:
+1. **What** the best practice is about (the rule, guideline, or pattern)
+2. **Why** it matters (correctness, performance, readability, security, etc.)
+3. **Category** it falls under (C++ coding, testing, architecture, build system, frontend, etc.)
+
+If the description is vague, ask the user to clarify before proceeding.
+
+---
+
+## Step 3: Check for Duplicates
+
+Search ALL existing best-practice documents for rules that already cover this topic:
+
+1. Read the index file `BEST-PRACTICES.md` to understand document categories
+2. Use Grep to search across all docs in `$DOCS_DIR/*.md` for keywords related to the new practice
+3. Read any potentially matching sections in full to determine if they cover the same ground
+
+**If a duplicate or near-duplicate is found:**
+- Tell the user: "Not added — this is already covered by **[Rule Title]** in `<document>.md` (ID: `<ID>`)."
+- If the existing rule is close but could be improved/updated with the new information, offer to update it instead
+- Stop here unless the user wants to proceed
+
+---
+
+## Step 4: Choose the Target Document
+
+Determine which document the practice belongs in by matching its topic to existing categories:
+
+| Topic Area | Document |
+|-----------|----------|
+| C++ includes, naming, CHECK/DCHECK, style, comments, logging | `coding-standards.md` |
+| C++ memory, lifetime, threading, pointers, prevent leaks | `coding-standards-memory.md` |
+| C++ API usage, containers, types, base utilities | `coding-standards-apis.md` |
+| Architecture, layering, DI, factories, prefs, services | `architecture.md` |
+| Build system, BUILD.gn, DEPS, buildflags, GRD | `build-system.md` |
+| chromium_src overrides, ChromiumImpl | `chromium-src-overrides.md` |
+| Documentation, comments, READMEs | `documentation.md` |
+| Frontend, TypeScript, React, WebUI | `frontend.md` |
+| Localization, GRD, strings, i18n | `localization.md` |
+| Async testing, RunUntil, RunUntilIdle, TestFuture | `testing-async.md` |
+| Test isolation, fakes, API testing | `testing-isolation.md` |
+| JavaScript in tests, EvalJs, isolated worlds | `testing-javascript.md` |
+| Navigation testing, timing | `testing-navigation.md` |
+| Android, Java, Kotlin | `android.md` |
+| iOS, Swift, ObjC, UIKit | `ios.md` |
+| Nala, Leo design system, icons | `nala.md` |
+| Patches, patch style | `patches.md` |
+
+**If it doesn't fit any existing document AND the topic seems like it would attract multiple related practices**, create a new category document:
+1. Choose a descriptive filename (e.g., `performance.md`, `security-practices.md`)
+2. Add a prefix mapping to `scripts/manage-bp-ids.py` in the `DOC_PREFIXES` dict
+3. Add an entry in `BEST-PRACTICES.md` index under the appropriate section
+4. Create the new doc with a `# Title` header and cross-reference comment
+
+**If it doesn't fit but is a one-off**, find the closest existing document and add it there.
+
+---
+
+## Step 5: Draft the Best Practice Entry
+
+Write the entry following the exact format used in existing docs. Read a few entries from the target document first to match its style.
+
+**Required format:**
+
+```markdown
+<a id="PLACEHOLDER"></a>
+
+## ✅ Rule Title Here
+
+**Bold principle statement explaining the rule.**
+
+```language
+// ❌ WRONG - brief explanation
+<bad code example>
+
+// ✅ CORRECT - brief explanation
+<good code example>
+```
+
+Additional context, edge cases, or explanation if needed.
+
+---
+```
+
+**Key formatting rules:**
+- Use `✅` for positive practices ("Do this"), `❌` for anti-patterns ("Don't do this")
+- Start with a bold principle statement
+- Include WRONG and CORRECT code examples when applicable
+- Use `---` horizontal rule after each entry
+- Use `##` for top-level practices, `###` for sub-practices within a group
+- Write `PLACEHOLDER` for the ID — the script will assign the real ID
+- Keep the entry concise and actionable
+
+**Show the drafted entry to the user and ask for approval before writing it.**
+
+---
+
+## Step 6: Add the Entry to the Document
+
+1. Read the target document to find the right location for the new entry (group it with related rules)
+2. Append or insert the entry at the chosen location
+3. Make sure there's a `---` separator between entries
+
+---
+
+## Step 7: Assign the Stable ID
+
+Run the ID assignment script to replace the `PLACEHOLDER` with a proper auto-incremented ID:
+
+```bash
+python3 $TOOLS_DIR/scripts/manage-bp-ids.py --assign
+```
+
+This will:
+- Find the `PLACEHOLDER` heading (which has no valid anchor)
+- Assign the next available ID for that document's prefix (e.g., `CS-042`)
+- Never reuse old IDs or fill gaps — always increments from the highest existing number
+
+---
+
+## Step 8: Validate
+
+Run validation to confirm the ID was assigned correctly and there are no duplicates:
+
+```bash
+python3 $TOOLS_DIR/scripts/manage-bp-ids.py --validate
+```
+
+If validation fails, fix the issue before proceeding.
+
+---
+
+## Step 9: Offer to Commit, Branch, and Create PR
+
+After successfully adding the best practice, ask the user:
+
+> "The best practice has been added to `<document>.md` with ID `<ID>`. Would you like me to:"
+> 1. Just leave the changes uncommitted
+> 2. Commit the changes on the current branch
+> 3. Create a new branch, commit, and open a PR
+
+**If the user chooses option 2 (commit):**
+```bash
+git add $DOCS_DIR/<document>.md
+# Also add manage-bp-ids.py and BEST-PRACTICES.md if they were modified
+git commit -m "Add best practice: <short rule title>"
+```
+
+**If the user chooses option 3 (branch + commit + PR):**
+```bash
+git checkout -b best-practices-update-$(date +%Y%m%d-%H%M%S)
+git add $DOCS_DIR/<document>.md
+# Also add manage-bp-ids.py and BEST-PRACTICES.md if they were modified
+git commit -m "Add best practice: <short rule title>"
+git push -u origin HEAD
+gh pr create --title "Add best practice: <short rule title>" --body "$(cat <<'EOF'
+## Summary
+- Adds new best practice to `<document>.md`: **<Rule Title>**
+- ID: `<ID>`
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)"
+```
+
+Report the PR URL if created.
+
+---
+
+## Important Guidelines
+
+- **Never reuse old IDs** — the `manage-bp-ids.py --assign` script handles this automatically by incrementing from the highest existing number
+- **Never manually pick IDs** — always let the script assign them
+- **Never fill gaps** in ID sequences — gaps are intentional (deleted practices)
+- **Always check for duplicates first** — adding redundant rules wastes everyone's time
+- **Match the style** of the target document exactly — read existing entries before writing
+- **Keep entries concise** — best practices should be scannable, not essays
+- **Include code examples** whenever possible — show don't tell
