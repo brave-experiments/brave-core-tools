@@ -70,7 +70,7 @@ Some skills require API keys or environment variables to be set (e.g., in your `
 
 ```bash
 cd brave-core-tools
-git pull origin main
+git pull origin master
 ```
 
 Symlinks are stable across updates — no need to re-run setup.
