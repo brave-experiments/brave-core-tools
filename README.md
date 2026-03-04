@@ -23,6 +23,7 @@ This will:
 
 | Skill | Description |
 |-------|-------------|
+| `/add-best-practice` | Add a new best practice entry to the docs |
 | `/check-best-practices` | Audit branch changes against best practices |
 | `/check-milestones` | Check/fix milestones on PRs and issues |
 | `/check-upstream-flake` | Check LUCI Analysis for upstream test flakiness |
