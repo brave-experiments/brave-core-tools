@@ -180,7 +180,6 @@ gh pr create --title "Add best practice: <short rule title>" --body "$(cat <<'EO
 - Adds new best practice to `<document>.md`: **<Rule Title>**
 - ID: `<ID>`
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 EOF
 )"
 ```
@@ -190,6 +189,8 @@ Report the PR URL if created.
 ---
 
 ## Important Guidelines
+
+- **No Claude Code attribution** — do NOT include `Co-Authored-By`, `Generated with Claude Code`, or any other attribution in commits or PRs
 
 - **Never reuse old IDs** — the `manage-bp-ids.py --assign` script handles this automatically by incrementing from the highest existing number
 - **Never manually pick IDs** — always let the script assign them
