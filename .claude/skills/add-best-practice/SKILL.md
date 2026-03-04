@@ -134,16 +134,10 @@ Additional context, edge cases, or explanation if needed.
 
 ## Step 7: Assign the Stable ID
 
-Run the ID assignment script to replace the `PLACEHOLDER` with a proper auto-incremented ID:
+Determine the next available ID manually by finding the highest existing ID for the target document's prefix and incrementing by 1. Replace the `PLACEHOLDER` anchor with the new ID (e.g., `CS-042`).
 
-```bash
-python3 $TOOLS_DIR/scripts/manage-bp-ids.py --assign
-```
-
-This will:
-- Find the `PLACEHOLDER` heading (which has no valid anchor)
-- Assign the next available ID for that document's prefix (e.g., `CS-042`)
-- Never reuse old IDs or fill gaps — always increments from the highest existing number
+- Never reuse old IDs or fill gaps — always increment from the highest existing number
+- Do NOT use `manage-bp-ids.py --assign` for this step (it doesn't handle `PLACEHOLDER` anchors correctly)
 
 ---
 
@@ -159,27 +153,26 @@ If validation fails, fix the issue before proceeding.
 
 ---
 
-## Step 9: Offer to Commit, Branch, and Create PR
+## Step 9: Commit and Offer to Branch + PR
 
-After successfully adding the best practice, ask the user:
+After successfully adding the best practice, commit all changes as a single atomic commit on the current branch. Use `--amend` to fold the ID assignment and any related edits into one commit (do NOT create separate commits for the entry and the ID assignment — they are one logical unit).
 
-> "The best practice has been added to `<document>.md` with ID `<ID>`. Would you like me to:"
-> 1. Just leave the changes uncommitted
-> 2. Commit the changes on the current branch
-> 3. Create a new branch, commit, and open a PR
-
-**If the user chooses option 2 (commit):**
 ```bash
 git add $DOCS_DIR/<document>.md
 # Also add manage-bp-ids.py and BEST-PRACTICES.md if they were modified
 git commit -m "Add best practice: <short rule title>"
 ```
 
-**If the user chooses option 3 (branch + commit + PR):**
+Then ask the user:
+
+> "The best practice has been added to `<document>.md` with ID `<ID>` and committed. Would you like me to create a branch and open a PR?"
+
+**If the user wants a PR:**
 ```bash
-git checkout -b best-practices-update-$(date +%Y%m%d-%H%M%S)
-git add $DOCS_DIR/<document>.md
-# Also add manage-bp-ids.py and BEST-PRACTICES.md if they were modified
+git stash  # stash the commit temporarily
+git checkout -b best-practices-update-$(date +%Y%m%d-%H%M%S) HEAD~1
+git stash pop
+git add -A
 git commit -m "Add best practice: <short rule title>"
 git push -u origin HEAD
 gh pr create --title "Add best practice: <short rule title>" --body "$(cat <<'EOF'
