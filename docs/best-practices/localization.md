@@ -231,4 +231,3 @@ This matters because translators use the English source as a reference, and erro
 Do not add screenshots as inline code comments. Add them to the PR description body.
 
 See also: [Brave Style Guide](./style-guide.md) for voice, capitalization, punctuation, and product naming rules that apply to all user-facing strings.
-

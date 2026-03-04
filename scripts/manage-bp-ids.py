@@ -36,6 +36,7 @@ DOC_PREFIXES = {
     "android": "AND",
     "ios": "IOS",
     "nala": "NA",
+    "localization": "L10N",
     "patches": "PATCH",
 }
 

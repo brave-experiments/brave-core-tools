@@ -855,14 +855,6 @@ if FeatureFlags.isEnabled(.myFeature) {
 
 ---
 
-<a id="IOS-062"></a>
-
-## ✅ Use Proper Unicode Ellipsis Character
-
-**Use the Unicode ellipsis character `…` (U+2026), not three periods `...`, in user-facing strings.**
-
----
-
 <a id="IOS-063"></a>
 
 ## ✅ Use `UIImage.prepareThumbnail(of:)` for Thumbnailing

@@ -346,14 +346,6 @@ public interface OnAnimationCompleteListener {
 
 ---
 
-<a id="AND-020"></a>
-
-## ✅ Provide Justification for Non-Translatable Strings
-
-**When adding strings with `translatable="false"` in `.grd` or resource files, there should be a clear documented reason** (e.g., brand names, URLs, temporary placeholders). Reviewers will question unmarked non-translatable strings.
-
----
-
 <a id="AND-021"></a>
 
 ## ✅ Prefer Early Returns Over Deep Nesting
