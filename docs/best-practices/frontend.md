@@ -361,3 +361,21 @@ isDirty = updateFileTimestamps(file) || isDirty
 ```
 
 Place the side-effecting call on the LEFT side of `||` to guarantee it always runs.
+
+---
+
+<a id="FE-026"></a>
+
+## ❌ Don't Replace Hardcoded Initial CSS With Design Tokens That Load Asynchronously
+
+**In WebUI HTML files, keep hardcoded initial background/foreground colors for the page body or root container.** Design tokens like `var(--leo-color-container-background)` are loaded asynchronously via JavaScript — replacing the hardcoded value causes a visible flash of unstyled content (FOUC) while the token loads.
+
+```html
+<!-- ❌ WRONG - Nala token isn't available yet at initial paint -->
+<style>body { background: var(--leo-color-container-background); }</style>
+
+<!-- ✅ CORRECT - hardcoded value matches the token's resolved value, avoids FOUC -->
+<style>body { background: #111114; }</style>
+```
+
+Once the page's JavaScript loads and Leo tokens are initialized, the themed value takes over naturally. The hardcoded value is only visible during the brief initial paint.

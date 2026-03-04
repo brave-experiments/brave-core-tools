@@ -568,3 +568,25 @@ base::Value::Dict dict = pref_service->GetDict(kMyPref).Clone();
 // ✅ CORRECT - use inline if only needed briefly
 if (pref_service->GetDict(kMyPref).FindString("key")) { ... }
 ```
+
+---
+
+<a id="CSM-034"></a>
+
+## ✅ Declare Members in Reverse Dependency Order for Safe Destruction
+
+**C++ destroys class members in reverse declaration order. If one member depends on another (e.g., a map of `string_view` pointing into a `deque<string>`), declare the depended-upon member first so it is destroyed last.**
+
+```cpp
+// ❌ WRONG - map_ holds string_views into strings_, but strings_ is destroyed first
+class NameTable {
+  base::flat_map<std::string_view, NameId> map_;
+  std::deque<std::string> strings_;
+};
+
+// ✅ CORRECT - strings_ destroyed after map_, so string_views remain valid during map_ destruction
+class NameTable {
+  std::deque<std::string> strings_;
+  base::flat_map<std::string_view, NameId> map_;
+};
+```

@@ -1086,3 +1086,49 @@ const base::TimeDelta kAnimationDuration = base::Milliseconds(200);
 // ✅ CORRECT - compile-time constant
 constexpr base::TimeDelta kAnimationDuration = base::Milliseconds(200);
 ```
+
+---
+
+<a id="CS-064"></a>
+
+## ✅ Prefer `const` for Local Variables Where Possible
+
+**Mark local variables `const` when they are not modified after initialization.** This communicates intent, prevents accidental mutation, and can enable compiler optimizations.
+
+```cpp
+// ❌ WRONG - mutable but never modified
+size_t index = items.size() - 1;
+auto result = DoComputation(index);
+
+// ✅ CORRECT - const communicates intent
+const size_t index = items.size() - 1;
+const auto result = DoComputation(index);
+```
+
+This is a preference, not a hard rule — always prefix with `nit:` and do not insist if the developer declines.
+
+---
+
+<a id="CS-065"></a>
+
+## ✅ Migrate User Prefs When Removing or Renaming Features
+
+**When removing a feature, model, or preference key that users may have selected, add a migration step to reset affected prefs to a sensible default.** Otherwise users who had the removed option selected are left with a stale value that may cause errors or confusing behavior.
+
+```cpp
+// ❌ WRONG - just delete the model, users with it selected get broken state
+// (removed model code)
+
+// ✅ CORRECT - migrate users off the removed model
+void MigrateProfilePrefs(PrefService* prefs) {
+  const std::string current = prefs->GetString(prefs::kDefaultModelKey);
+  // Reset to default if user had a removed model selected
+  static constexpr auto kRemovedModels = base::MakeFixedFlatSet<std::string_view>({
+      "chat-old-model-1",
+      "chat-old-model-2",
+  });
+  if (kRemovedModels.contains(current)) {
+    prefs->ClearPref(prefs::kDefaultModelKey);
+  }
+}
+```

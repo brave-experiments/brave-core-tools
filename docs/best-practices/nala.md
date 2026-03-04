@@ -219,3 +219,27 @@ import SegmentedControlItem from '@brave/leo/react/segmentedControlItem'
 ```
 
 ---
+
+<a id="NA-012"></a>
+
+## ❌ Don't Create Intermediate Color Tokens — Use Nala Tokens Directly
+
+**When referencing Nala/Leo color tokens in C++ color mixers, use the Nala token directly at the call site instead of creating an intermediate `kColor*` token that just maps to it.** Extra indirection obscures the actual token being used and adds maintenance burden when the design system changes.
+
+```cpp
+// ❌ WRONG - unnecessary intermediate token
+// In brave_color_id.h:
+BRAVE_COLOR_ID(kColorSidebarPanelBackground)
+
+// In brave_color_mixer.cc:
+mixer[kColorSidebarPanelBackground] = {nala::kColorContainerBackground};
+
+// In side_panel_view.cc:
+SetBackground(views::CreateThemedSolidBackground(kColorSidebarPanelBackground));
+
+// ✅ CORRECT - use the Nala token directly
+// In side_panel_view.cc:
+SetBackground(views::CreateThemedSolidBackground(nala::kColorContainerBackground));
+```
+
+---
