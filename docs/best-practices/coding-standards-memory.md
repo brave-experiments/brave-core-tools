@@ -547,3 +547,24 @@ When refcounting seems necessary:
 - Restrict the class to a single thread/sequence
 - Use `PostTask()` to proxy calls to the correct thread
 - Use `base::BindOnce()` with `WeakPtr` for automatic cancellation on destruction
+
+---
+
+<a id="CSM-033"></a>
+
+## ❌ Don't Hold Pointers to `base::Value` From PrefService
+
+**It is not safe to store a pointer to a `base::Value` (or `base::Value::Dict`, etc.) returned from `PrefService`.** If the preference is later updated or the `PrefService` is destroyed, the pointer becomes dangling.
+
+```cpp
+// ❌ WRONG - pointer dangles if pref is updated
+const base::Value::Dict* dict =
+    &pref_service->GetDict(kMyPref);
+// ... later use of `dict` may crash
+
+// ✅ CORRECT - clone the value for longer-lived usage
+base::Value::Dict dict = pref_service->GetDict(kMyPref).Clone();
+
+// ✅ CORRECT - use inline if only needed briefly
+if (pref_service->GetDict(kMyPref).FindString("key")) { ... }
+```
