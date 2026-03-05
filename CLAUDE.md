@@ -11,7 +11,7 @@ Before making changes to brave-core, read the relevant best practices:
 
 ## Skills
 
-14 developer-facing skills are in `.claude/skills/`. After running `./setup.sh`, they're available as slash commands when working in `src/brave/`.
+17 developer-facing skills are in `.claude/skills/`. After running `./setup.sh`, they're available as slash commands when working in `src/brave/`.
 
 ## Scripts
 

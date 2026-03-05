@@ -29,7 +29,7 @@ fi
 mkdir -p "$SKILLS_DEST"
 
 # Skills that should only run from brave-core-tools (not synced)
-SKIP_SKILLS="add-best-practice"
+SKIP_SKILLS="add-best-practice fix-bp-docs"
 
 for skill_dir in "$SKILLS_SRC"/*/; do
   skill_name=$(basename "$skill_dir")
