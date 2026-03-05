@@ -11,17 +11,14 @@ Add a new best practice rule to the correct best-practices document. Ensures no 
 
 ---
 
-## Step 1: Detect Working Directory
+## Step 1: Verify Working Directory
 
-```bash
-CURRENT_DIR=$(pwd)
-```
+This skill must be run from the `brave-core-tools` directory. It is NOT synced to `src/brave`.
 
-- **If within `brave-core-tools`**: `TOOLS_DIR="."`
-- **If within `src/brave`**: `TOOLS_DIR="./brave-core-tools"` (or find it traversing up the directories. it could be a sibling of src/)
-- **Otherwise**: Look for `BEST-PRACTICES.md` to locate the tools directory
+Set `TOOLS_DIR="."` and `DOCS_DIR="$TOOLS_DIR/docs/best-practices"`.
 
-Set `DOCS_DIR="$TOOLS_DIR/docs/best-practices"`.
+If the current working directory does not contain `BEST-PRACTICES.md`, stop and tell the user:
+> "This skill must be run from the `brave-core-tools` directory."
 
 ---
 

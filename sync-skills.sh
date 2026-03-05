@@ -28,8 +28,17 @@ fi
 # Create destination directory if needed
 mkdir -p "$SKILLS_DEST"
 
+# Skills that should only run from brave-core-tools (not synced)
+SKIP_SKILLS="add-best-practice"
+
 for skill_dir in "$SKILLS_SRC"/*/; do
   skill_name=$(basename "$skill_dir")
+
+  # Skip skills that are not meant to be synced
+  if echo "$SKIP_SKILLS" | grep -qw "$skill_name"; then
+    echo "⊘ $skill_name (not synced — runs only from brave-core-tools)"
+    continue
+  fi
   dest="$SKILLS_DEST/$skill_name"
 
   if [ -L "$dest" ]; then
