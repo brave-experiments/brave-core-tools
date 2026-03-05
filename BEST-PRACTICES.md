@@ -6,10 +6,6 @@ This document is an index of best practices for the Brave Browser codebase, disc
 
 - **[Nala / Leo Design System](./docs/best-practices/nala.md)** - Icons (Android, WebUI, C++), Android color tokens, Leo component usage
 
-## Localization
-
-- **[Localization](./docs/best-practices/localization.md)** - GRD string attributes, non-translatable strings, ellipsis characters, translator context
-
 ## Code & Architecture
 
 - **[Architecture and Code Organization](./docs/best-practices/architecture.md)** - Layering violations, dependency injection, factory patterns, pref management
@@ -60,5 +56,4 @@ Before writing async tests, verify:
 - [Chromium Smart Pointer Guidelines](https://www.chromium.org/developers/smart-pointer-guidelines/)
 - [Chromium Container Guidelines](https://chromium.googlesource.com/chromium/src/+/HEAD/base/containers/README.md)
 - [Chromium Componentization Cookbook](https://www.chromium.org/developers/design-documents/cookbook/)
-- [Progress Log](./progress.txt) - Real examples from fixing intermittent tests
 - [Agent Instructions](./CLAUDE.md) - Full workflow and testing requirements

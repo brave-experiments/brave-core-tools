@@ -314,7 +314,7 @@ void RewardsServiceImpl::RecordP3AMetric1() { ... }
 void RewardsServiceImpl::RecordP3AMetric2() { ... }
 
 // ✅ CORRECT - separate helper file
-// brave/browser/p3a/brave_p3a_utils.h
+// brave/browser/p3a/p3a_core_metrics.h
 void RecordRewardsP3A(RewardsService* service);
 ```
 
@@ -653,20 +653,6 @@ std::string api_url = std::getenv("BRAVE_API_URL");
 ```
 
 ---
-
-<a id="CS-038"></a>
-
-## ✅ Use the Right Target Type: source_set vs static_library
-
-**Use `source_set` only for internal component dependencies. Public targets for a component should use `static_library` or `component`.** Only internal deps that are not meant to be used outside the component should be `source_set` (with restricted visibility).
-
----
-
-<a id="CS-039"></a>
-
-## ✅ Use `sources.gni` Only for Circular Dependencies with Upstream
-
-**Only use `sources.gni` when inserting source files into upstream Chromium targets with circular deps.** For all other cases, use normal `BUILD.gn` targets. Putting everything in `sources.gni` hurts incremental builds because changes trigger rebuilds of large upstream targets.
 
 ---
 
@@ -1057,22 +1043,6 @@ TEST_F(MyFeatureDeathTest, CrashesOnNull) {
 
 ---
 
-<a id="CS-062"></a>
-
-## ✅ Pass Primitive Types by Value, Not Const Reference
-
-**Primitive types (`char`, `int`, `bool`, `float`, `double`, etc.) should always be passed by value, not by `const&`.** The indirection of a reference is more expensive than copying a primitive.
-
-```cpp
-// ❌ WRONG - unnecessary indirection
-bool IsAllowedChar(const char& c) { ... }
-void SetEnabled(const bool& enabled) { ... }
-
-// ✅ CORRECT - pass primitives by value
-bool IsAllowedChar(char c) { ... }
-void SetEnabled(bool enabled) { ... }
-```
-
 ---
 
 <a id="CS-063"></a>
@@ -1109,6 +1079,9 @@ const auto result = DoComputation(index);
 
 This is a preference, not a hard rule — always prefix with `nit:` and do not insist if the developer declines.
 
+---
+
+<a id="CS-066"></a>
 
 ## ❌ Don't Commit Commented-Out Code
 

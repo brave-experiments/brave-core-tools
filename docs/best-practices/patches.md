@@ -1,26 +1,12 @@
 # Patches
 
 <a id="PATCH-001"></a>
-
-## ❌ Minimize Whitespace Changes in Patches
-
-**Leave whitespace intact in patch files to minimize diff size.** Only change what's functionally necessary. Unnecessary whitespace changes make patches harder to review and more likely to conflict.
-
----
-
 <a id="PATCH-002"></a>
-
-## ❌ Never Add Empty Lines in Patches
-
-**Never add empty lines in patch files.** Keep patches minimal - only change what's functionally necessary.
-
----
-
 <a id="PATCH-003"></a>
 
-## ❌ Never Add Comments in Patches
+## ❌ Patches Must Contain Only Functional Changes
 
-**Never add comments, empty lines, or any non-functional changes in patch files.** Patches should contain only the minimal functional changes needed.
+**Patches should contain only the minimal functional changes needed.** Never add comments, empty lines, whitespace changes, or any other non-functional modifications. Leave whitespace intact to minimize diff size. Unnecessary changes make patches harder to review and more likely to conflict during Chromium upgrades.
 
 ---
 

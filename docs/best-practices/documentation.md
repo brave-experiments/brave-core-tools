@@ -41,8 +41,6 @@ void FetchData() { ... }
 
 ---
 
----
-
 <a id="DOC-004"></a>
 
 ## ✅ Method Documentation Should Describe the Contract

@@ -447,17 +447,3 @@ useEffect(() => {
 
 ---
 
-<a id="FE-030"></a>
-
-## ✅ Use Nala Design Tokens Directly — No Intermediate Aliases
-
-**Use Nala design tokens directly at call sites instead of defining intermediate color token aliases.** Wrapper tokens like `kColorSidebarPanelHeaderBackground` that just map to a Nala token add indirection without value.
-
-```cpp
-// ❌ WRONG - unnecessary alias
-mixer[kColorSidebarPanelHeaderBackground] = {nala::kColorPageBackground};
-// Then using kColorSidebarPanelHeaderBackground elsewhere
-
-// ✅ CORRECT - use the Nala token directly
-mixer[kColorToolbar] = {nala::kColorPageBackground};
-```

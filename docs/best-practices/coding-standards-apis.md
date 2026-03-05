@@ -1096,21 +1096,6 @@ struct ContentSite {
 
 ---
 
-<a id="CSA-061"></a>
-
-## ✅ Use `TEST` Instead of `TEST_F` When No Fixture Is Needed
-
-**If your test doesn't set up shared state via a fixture class, use `TEST` instead of `TEST_F`.** Move helper functions to an anonymous namespace as free functions.
-
-```cpp
-// ❌ WRONG - empty fixture
-class MyExtractorTest : public testing::Test {};
-TEST_F(MyExtractorTest, ExtractsCorrectly) { ... }
-
-// ✅ CORRECT - no fixture needed
-TEST(MyExtractorTest, ExtractsCorrectly) { ... }
-```
-
 ---
 
 <a id="CSA-062"></a>

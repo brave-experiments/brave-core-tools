@@ -289,11 +289,11 @@ void MyService::Shutdown() {
 
 ```cpp
 // ❌ WRONG
-explicit FtxService(content::BrowserContext* context);
+explicit MyFeatureService(content::BrowserContext* context);
 
 // ✅ CORRECT
-FtxService(PrefService* prefs,
-           scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory);
+MyFeatureService(PrefService* prefs,
+                 scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory);
 ```
 
 ---
