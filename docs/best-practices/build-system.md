@@ -187,9 +187,9 @@ deps += [ "//brave/utility" ]
 
 <a id="BS-017"></a>
 
-## ✅ Add New URLs to the Network Audit Whitelist
+## ✅ Add New URLs to the Network Audit Allowed List
 
-**When adding any new network endpoint URL, it must be added to the network audit whitelist** at `lib/whitelistedUrlPrefixes.js` in brave-browser. Without this, the network audit check will fail.
+**When adding any new network endpoint URL, it must be added to the network audit allowed list** in `brave/browser/net/brave_network_audit_allowed_lists.h`. Without this, the network audit check will fail.
 
 ---
 
@@ -252,6 +252,14 @@ if (use_blink) {
 ## ❌ Don't Have Both `BUILD.gn` and `sources.gni` in the Same Directory
 
 **A directory should contain either a `BUILD.gn` file (preferred) or a `sources.gni` file, but not both.** Having both creates confusion about which is authoritative and makes dependency tracking harder.
+
+---
+
+<a id="BS-053"></a>
+
+## ✅ Use `sources.gni` Only for Circular Dependencies with Upstream
+
+**Only use `sources.gni` when inserting source files into upstream Chromium targets with circular deps.** For all other cases, use normal `BUILD.gn` targets. Putting everything in `sources.gni` hurts incremental builds because changes trigger rebuilds of large upstream targets.
 
 ---
 
@@ -526,7 +534,7 @@ source_set("unit_tests") {
 ```cpp
 // ❌ WRONG - redundant guards
 #if BUILDFLAG(ENABLE_BRAVE_REWARDS)
-#include "brave/components/brave_rewards/core/buildflags.h"
+#include "brave/components/brave_rewards/core/buildflags/buildflags.h"
 #endif
 
 #if BUILDFLAG(ENABLE_BRAVE_REWARDS)
@@ -535,7 +543,7 @@ namespace rewards { ... }
 
 // ✅ CORRECT - single merged block
 #if BUILDFLAG(ENABLE_BRAVE_REWARDS)
-#include "brave/components/brave_rewards/core/buildflags.h"
+#include "brave/components/brave_rewards/core/buildflags/buildflags.h"
 namespace rewards { ... }
 #endif
 ```
@@ -608,7 +616,7 @@ deps += [ "//brave/components/local_ai/resources" ]
 **When introducing a build flag for a component, add `static_assert` in public-facing headers** to catch accidental inclusion when the feature is disabled.
 
 ```cpp
-// In brave/components/brave_wallet/browser/wallet_service.h
+// In brave/components/brave_wallet/browser/brave_wallet_service.h
 #include "brave/components/brave_wallet/common/buildflags/buildflags.h"
 static_assert(BUILDFLAG(ENABLE_BRAVE_WALLET));
 ```
@@ -797,15 +805,15 @@ If a constant (especially a URL) is shared across multiple components with no cl
 ```cpp
 // ❌ UNNECESSARY - guarding a forward declaration
 #if BUILDFLAG(ENABLE_BRAVE_AI_CHAT)
-class ContentAgentToolProvider;
+class HistoryTool;
 #endif
 
 // ✅ CORRECT - forward declaration needs no guard
-class ContentAgentToolProvider;
+class HistoryTool;
 
 // Guard the includes and usage instead:
 #if BUILDFLAG(ENABLE_BRAVE_AI_CHAT)
-#include "brave/browser/ai_chat/tools/content_agent_tool_provider.h"
+#include "brave/browser/ai_chat/tools/history_tool.h"
 #endif
 ```
 

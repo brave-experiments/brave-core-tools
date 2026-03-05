@@ -165,7 +165,7 @@ void Init(const network::ResourceRequest& request) {
 #include "brave/vendor/brave_base/random.h"
 
 // ✅ CORRECT - use the public component API header
-#include "brave/components/brave_rewards/core/utility/random_util.h"
+#include "brave/components/brave_rewards/core/engine/util/random_util.h"
 ```
 
 ---
@@ -327,7 +327,7 @@ tor_client_updater()->Cleanup();
 brave/browser/android/rewards/brave_rewards_native_worker.cc
 
 # ✅ CORRECT
-brave/components/brave_rewards/android/brave_rewards_native_worker.cc
+brave/browser/brave_rewards/android/brave_rewards_native_worker.cc
 ```
 
 This keeps related code together and is consistent with Chromium patterns like `chrome/browser/history/android/`.
@@ -419,7 +419,7 @@ void RewardsService::SetRecurringDonation(amount) {
 void DoSomething(internal::database::DatabasePublisherInfo info);
 
 // ✅ CORRECT - use public Mojo types
-#include "brave/components/brave_rewards/common/mojom/rewards.mojom.h"
+#include "brave/components/brave_rewards/core/mojom/rewards.mojom.h"
 void DoSomething(mojom::PublisherInfoPtr info);
 ```
 

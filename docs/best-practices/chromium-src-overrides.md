@@ -25,7 +25,7 @@ When Chromium changes are unavoidable, follow this preference order:
 
 ## ❌ Don't Use chromium_src Overrides to Disable Tests
 
-**Never use `#define TestName DISABLED_TestName` in chromium_src overrides to disable upstream tests.** Use filter files in `test/filters/` instead, and move any Brave-specific replacement tests into the appropriate Brave test target (`brave_unit_tests`, `brave_browser_tests`, `brave_components_unittests`). See [Disabled Test Investigations](../testing-requirements.md#disabled-test-investigations-fixing--re-enabling) for the full pattern and examples.
+**Never use `#define TestName DISABLED_TestName` in chromium_src overrides to disable upstream tests.** Use filter files in `test/filters/` instead, and move any Brave-specific replacement tests into the appropriate Brave test target (`brave_unit_tests`, `brave_browser_tests`, `brave_components_unittests`).
 
 ---
 
@@ -177,13 +177,13 @@ class TranslateURLFetcher {
 
 ```cpp
 // ❌ WRONG - patch to add virtual keyword
--  void StartAutocomplete(...);
-+  virtual void StartAutocomplete(...);
+-  void SomeMethod(...);
++  virtual void SomeMethod(...);
 
 // ✅ CORRECT - chromium_src define
-#define StartAutocomplete virtual StartAutocomplete
-#include "src/components/omnibox/browser/omnibox_controller.h"
-#undef StartAutocomplete
+#define SomeMethod virtual SomeMethod
+#include "src/path/to/original_header.h"
+#undef SomeMethod
 ```
 
 Note: This technique does not work when the return type is a pointer or reference (e.g., `T* Method()`).
@@ -253,7 +253,7 @@ gn check out/Default
 ```cpp
 // ❌ WRONG - direct include from chromium_src to brave component
 // chromium_src/chrome/browser/policy/profile_policy_connector.cc
-#include "brave/components/brave_policy/brave_policy_manager.h"
+#include "brave/components/brave_policy/brave_browser_policy_provider.h"
 
 // ✅ CORRECT - forward declare, implement in component, link via sources.gni
 // chromium_src/chrome/browser/policy/profile_policy_connector.cc
