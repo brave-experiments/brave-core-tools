@@ -38,6 +38,7 @@ DOC_PREFIXES = {
     "nala": "NA",
     "localization": "L10N",
     "patches": "PATCH",
+    "ui-views": "UV",
 }
 
 ANCHOR_RE = re.compile(r'^<a\s+id="([^"]+)"\s*></a>\s*$')
