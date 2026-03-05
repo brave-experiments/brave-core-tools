@@ -21,6 +21,7 @@ This document is an index of best practices for the Brave Browser codebase, disc
 - **[Build System](./docs/best-practices/build-system.md)** - BUILD.gn organization, buildflags, DEPS, GRD resources
 - **[UI/Views](./docs/best-practices/ui-views.md)** - Desktop C++ views, view hierarchy, layout, styling
 - **[Patches](./docs/best-practices/patches.md)** - Patch style, minimality, extensibility via defines/includes, GN patch patterns
+- **[Plaster](./docs/best-practices/plaster.md)** - Plaster patch configuration patterns and best practices
 - **[iOS (Swift/ObjC/UIKit)](./docs/best-practices/ios.md)** - Swift idioms, SwiftUI, UIKit lifecycle, ObjC bridge, Tab architecture, chromium_src iOS overrides
 
 ## Testing
