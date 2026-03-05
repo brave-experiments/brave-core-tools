@@ -38,6 +38,7 @@ DOC_PREFIXES = {
     "nala": "NA",
     "localization": "L10N",
     "patches": "PATCH",
+    "plaster": "PLSTR",
     "ui-views": "UV",
 }
 
