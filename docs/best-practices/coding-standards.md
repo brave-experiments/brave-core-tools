@@ -108,7 +108,7 @@ class BraveWebcompatReporterService { ... };
 class WebcompatReporterService { ... };
 
 // ✅ CORRECT - Brave prefix when overriding Chromium
-class BraveOmniboxController : public OmniboxController { ... };
+class BraveOmniboxClientImpl : public ChromeOmniboxClient { ... };
 ```
 
 Also: **filename should match the class name.** `WebcompatReporterService` -> `webcompat_reporter_service.h`.
@@ -819,8 +819,8 @@ struct TestData {
 
 ```cpp
 // ❌ WRONG - hard to test
-BraveOriginState* BraveOriginState::GetInstance() {
-  static base::NoDestructor<BraveOriginState> instance;
+BraveOriginService* BraveOriginService::GetInstance() {
+  static base::NoDestructor<BraveOriginService> instance;
   return instance.get();
 }
 

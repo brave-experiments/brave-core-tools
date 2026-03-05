@@ -123,7 +123,7 @@ void SomeClass::LargeMethod() {
 ```java
 // ❌ WRONG - patching IncognitoNewTabPageView directly
 
-// ✅ CORRECT - create BraveIncognitoNewTabPageView as subclass
+// ✅ CORRECT - create BraveIncognitoNewTabPage as subclass
 // Patch only changes the superclass reference
 ```
 

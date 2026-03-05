@@ -40,20 +40,20 @@ This is a Chromium layering violation. Components are lower-level and must not r
 **BAD:**
 ```cpp
 // ❌ WRONG - components/ code using g_browser_process
-// In components/p3a/brave_p3a_service.cc
-void BraveP3AService::Init() {
-  uploader_.reset(new BraveP3AUploader(
-      g_browser_process->shared_url_loader_factory(), ...));  // Layering violation!
+// In components/p3a/p3a_service.cc
+void P3AService::Init() {
+  url_loader_factory_ =
+      g_browser_process->shared_url_loader_factory();  // Layering violation!
 }
 ```
 
 **GOOD:**
 ```cpp
 // ✅ CORRECT - dependency injected via Init()
-// In components/p3a/brave_p3a_service.cc
-void BraveP3AService::Init(
+// In components/p3a/p3a_service.cc
+void P3AService::Init(
     scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory) {
-  uploader_.reset(new BraveP3AUploader(url_loader_factory, ...));
+  url_loader_factory_ = url_loader_factory;
 }
 ```
 
@@ -369,7 +369,7 @@ public:
 
 // ✅ CORRECT - friend class
 private:
-  friend class BraveDownloadProtectionService;
+  friend class BraveExternalProcessImporterBridge;
   void InternalMethod();
 ```
 
@@ -473,12 +473,12 @@ if (!service) {
 ```cpp
 // ❌ WRONG - setting callback from an unrelated factory
 void BraveVpnServiceFactory::BuildServiceInstanceFor(...) {
-  auto* api = BraveVPNOSConnectionAPI::GetInstance();
-  api->SetInstallSystemServiceCallback(base::BindRepeating(...));
+  auto* manager = BraveVPNConnectionManager::GetInstance();
+  manager->SetInstallSystemServiceCallback(base::BindRepeating(...));
 }
 
 // ✅ CORRECT - pass dependency via constructor
-BraveVPNOSConnectionAPI::BraveVPNOSConnectionAPI(
+BraveVPNConnectionManager::BraveVPNConnectionManager(
     base::RepeatingCallback<void()> install_callback)
     : install_system_service_callback_(std::move(install_callback)) {}
 ```

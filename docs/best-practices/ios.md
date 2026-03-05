@@ -655,12 +655,12 @@ dispatch_async(queue, ^{
 
 ```swift
 // ❌ WRONG - singleton access
-let manager = BraveRewardsManager.shared
-manager.fetchBalance()
+let controller = BraveRewardsViewController.shared
+controller.fetchBalance()
 
 // ✅ CORRECT - dependency injection
-init(rewardsManager: BraveRewardsManager) {
-  self.rewardsManager = rewardsManager
+init(rewardsController: BraveRewardsViewController) {
+  self.rewardsController = rewardsController
 }
 ```
 
