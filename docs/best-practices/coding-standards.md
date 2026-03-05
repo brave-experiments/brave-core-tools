@@ -451,7 +451,9 @@ Also: don't add unnecessary DCHECKs. For example, `DCHECK(g_browser_process)` is
 
 **`NOTREACHED`/`CHECK(false)` should only crash the browser for security-critical invariants.** For non-security cases (like invalid enum values from data processing), prefer returning `std::optional`/`std::nullopt` or a default value.
 
-**Important:** `NOTREACHED()` is now fatal in all builds and terminates control flow. The compiler treats code after `NOTREACHED()` as dead code. Do not place executable statements after it. See [Chromium style guide](https://chromium.googlesource.com/chromium/src/+/HEAD/styleguide/c++/c++.md).
+**Important:** `NOTREACHED()` is now fatal in all builds and terminates control flow. The compiler treats code after `NOTREACHED()` as dead code. Do not place executable statements after it.
+
+**Gradual migration:** When migrating from `DCHECK` to fatal `NOTREACHED()`/`CHECK()`, you can use `NOTREACHED(base::NotFatalUntil::M140)` or `CHECK(cond, base::NotFatalUntil::M140)` to gather crash diagnostics before enforcing fatality. See [Chromium style guide](https://chromium.googlesource.com/chromium/src/+/HEAD/styleguide/c++/c++.md).
 
 ```cpp
 // ❌ WRONG - crashes browser for non-security enum mismatch
@@ -1149,3 +1151,36 @@ void MigrateProfilePrefs(PrefService* prefs) {
 ## ✅ Clean Up All Dead Code When Removing Features
 
 **When removing a feature flag, model, or script, also remove all associated dead code:** unused helper functions, orphaned UI strings from `.grdp` files, related constants, and utility functions that were only referenced by the removed code. Leaving dead code behind creates maintenance burden and confusion.
+
+---
+
+<a id="CS-066"></a>
+
+## ❌ Avoid Multiple Inheritance Beyond Interfaces
+
+**Multiple inheritance is permitted in Chromium but discouraged beyond interface-style patterns.** Prefer composition over deep multiple inheritance hierarchies. If you inherit from multiple concrete classes, explore whether composition achieves the same goal more cleanly. See [Chromium C++ style guide](https://chromium.googlesource.com/chromium/src/+/HEAD/styleguide/c++/c++.md).
+
+---
+
+<a id="CS-067"></a>
+
+## ✅ Use `DVLOG(1)` for Retained Logging, `ScopedCrashKeyString` for Crash Diagnostics
+
+**Per the Chromium style guide, remove all logging before check-in.** When logging must remain (e.g., for rare bug investigation), use `DVLOG(1)` — it avoids release binary bloat and can be enabled via `--v=1` or `--vmodule=mod=1`.
+
+**For crash diagnostics, use `base::debug::ScopedCrashKeyString` instead of logs.** Crash keys attach data to crash reports without polluting logs.
+
+```cpp
+// ❌ WRONG - LOG in production for diagnostics
+LOG(ERROR) << "Unexpected state: " << state;
+
+// ✅ CORRECT - DVLOG for retained debug logging
+DVLOG(1) << "Processing state: " << state;
+
+// ✅ CORRECT - crash key for crash diagnostics
+static auto* crash_key = base::debug::AllocateCrashKeyString(
+    "my_state", base::debug::CrashKeySize::Size64);
+base::debug::ScopedCrashKeyString scoped_key(crash_key, state);
+```
+
+See [Chromium C++ style guide](https://chromium.googlesource.com/chromium/src/+/HEAD/styleguide/c++/c++.md).

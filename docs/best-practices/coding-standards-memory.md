@@ -590,3 +590,19 @@ class NameTable {
   base::flat_map<std::string_view, NameId> map_;
 };
 ```
+
+---
+
+<a id="CSM-035"></a>
+
+## ✅ Prefer `base::SequenceLocalStorageSlot` Over `thread_local`
+
+**For sequence-aware code, use `base::SequenceLocalStorageSlot` instead of `thread_local`.** It integrates with Chromium's task runner model and avoids the strict requirements of `thread_local`.
+
+When `thread_local` is truly needed, Chromium requires:
+- Type must satisfy `std::is_trivially_destructible_v<T>` (`raw_ptr` is excluded)
+- Cannot be exported via `COMPONENT_EXPORT`
+- Namespace/class scope requires `ABSL_CONST_INIT` annotation
+- Cannot be constructed in OOM handlers (POSIX construction may allocate)
+
+If these requirements cannot be met, use `base::ThreadLocalOwnedPointer` instead. See [Chromium C++ style guide](https://chromium.googlesource.com/chromium/src/+/HEAD/styleguide/c++/c++.md).
