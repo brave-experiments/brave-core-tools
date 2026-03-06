@@ -107,9 +107,9 @@ Combine these diffs to form the complete set of changes to review. The combined 
 
 3. **Read the modified files** in full to understand the surrounding code context
 
-Then proceed to the **Common Analysis Steps** below (Step 4 onward), using the gathered diff instead of a PR diff.
+Then proceed to the **Common Analysis Steps** below (Step 3 onward), using the gathered diff instead of a PR diff.
 
-**Note**: For local reviews, skip Steps 1-3 (PR-specific steps) and the filtering scripts step (Step 5), since there is no PR or GitHub data to filter.
+**Note**: For local reviews, skip Steps 1-2 (PR-specific steps) and the filtering scripts step (Step 4), since there is no PR or GitHub data to filter.
 
 ---
 
@@ -134,33 +134,15 @@ gh pr view $PR_NUMBER --repo $PR_REPO --json title,body,state,headRefName,author
 
 ---
 
-## Step 2: Find Associated User Story (PR Mode Only)
-
-**Skip this step if `./brave-core-bot/prd.json` does not exist** (this is only available in bot context).
-
-If the file exists, search it for the story associated with this PR:
-
-1. Look for a story with matching `prNumber` or `prUrl`
-2. If not found by PR, look for matching `branchName` (head ref from PR)
-3. If found, gather:
-   - Story title and description
-   - GitHub issue number (if any)
-   - Acceptance criteria
-   - Any previous attempts documented
-
-If no story found, note this in the review (PR may be manual, not bot-generated).
-
----
-
-## Step 3: Research Previous Fix Attempts and Prove Differentiation (PR Mode Only)
+## Step 2: Research Previous Fix Attempts and Prove Differentiation (PR Mode Only)
 
 **CRITICAL**: Before evaluating the current fix, understand what has been tried before. If previous attempts exist, the current fix **MUST prove it is materially different** or the review is an **AUTOMATIC FAIL**.
 
 **Where to search:** Previous fix attempts live as pull requests in the target repository (typically `brave/brave-core`). Search by issue number AND by test name/keywords, since not all PRs reference the issue directly:
 
 ```bash
-# Extract issue number from story or PR body
-ISSUE_NUMBER="<extracted from story or PR body>"
+# Extract issue number from PR body
+ISSUE_NUMBER="<extracted from PR body>"
 
 # Search PRs in the target repo by issue number and test name
 gh api search/issues --method GET \
@@ -211,7 +193,7 @@ The following steps apply to both local and PR mode reviews.
 
 ---
 
-## Step 4: Analyze the Proposed Changes
+## Step 3: Analyze the Proposed Changes
 
 **For PR mode**, get the full diff:
 ```bash
@@ -251,7 +233,7 @@ gh pr diff $PR_NUMBER --repo $PR_REPO
 
 ---
 
-## Step 5: Fetch GitHub Data (PR Mode Only)
+## Step 4: Fetch GitHub Data (PR Mode Only)
 
 **For the associated issue (if any):**
 ```bash
@@ -267,7 +249,7 @@ gh api repos/$PR_REPO/issues/$PR_NUMBER/comments --paginate
 
 ---
 
-## Step 6: Validate Root Cause Analysis
+## Step 5: Validate Root Cause Analysis
 
 **Read the PR body and any issue analysis carefully.**
 
@@ -318,7 +300,7 @@ Without this explanation, the analysis is incomplete even if the general mechani
 
 ---
 
-## Step 7: Check Against Best Practices
+## Step 6: Check Against Best Practices
 
 **Read and apply `./brave-core-tools/BEST-PRACTICES.md` criteria.**
 
@@ -423,7 +405,7 @@ For flaky tests, the root cause analysis must explain **why the failure is inter
 
 ---
 
-## Step 8: Assess Fix Confidence
+## Step 7: Assess Fix Confidence
 
 Rate confidence level:
 
@@ -449,7 +431,7 @@ Rate confidence level:
 
 ---
 
-## Step 9: Generate Review Report
+## Step 8: Generate Review Report
 
 **CRITICAL: Avoid Redundancy**
 - Each piece of information should appear ONCE in the report
@@ -462,7 +444,7 @@ Rate confidence level:
 - The confidence level should reflect the state AFTER you've provided any missing context - if you filled the gaps, confidence should be higher
 
 **CRITICAL: No Vague Language in YOUR Analysis**
-- The same vague language rules (Step 6) apply to YOUR review output, not just the PR's analysis
+- The same vague language rules (Step 5) apply to YOUR review output, not just the PR's analysis
 - If you write "appears to", "seems to", "might be", etc. in your analysis, you have NOT completed the review
 - You must either:
   1. **Investigate further** until you can make a definitive statement, OR
