@@ -23,3 +23,26 @@ re_pattern: 'kOldConstant'
 Matching specific context (method names, surrounding code) makes patches more maintainable and prevents accidental matches during Chromium updates. Use broad patterns only when you explicitly intend to replace all occurrences.
 
 ---
+
+<a id="PLSTR-002"></a>
+
+## ✅ Use `pattern` for Simple Symbol Replacement, `pattern_re` for Context-Aware Matches
+
+**Only use `pattern` for simple matches—generally a single symbol name that you want to replace globally.** If you need more context (including whitespace), then `pattern_re` is more appropriate.
+
+```yaml
+# ✅ CORRECT - simple symbol replacement with pattern
+pattern: 'kOldConstantName'
+replacement: 'kNewConstantName'
+
+# ✅ CORRECT - pattern_re handles flexible whitespace
+pattern_re: '(^\s+)(ChromiumMethod\(\))'
+replacement: '\1BraveMethod()'
+
+# ❌ WRONG - pattern requires exact whitespace match, fragile to upstream changes
+pattern: '    MyMethod()'  # Breaks if upstream changes indentation
+```
+
+Using `pattern` for simple symbol names keeps configs readable and maintainable. Reserve `pattern_re` for when you need regex features like whitespace matching, character classes, or structural patterns.
+
+---
