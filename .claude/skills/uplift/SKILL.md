@@ -122,7 +122,9 @@ Use a HEREDOC for correct formatting:
 
 ```bash
 gh pr create --repo brave/brave-core --base <target-branch> --title "<title>" --body "$(cat <<'EOF'
-Uplift of #XXXX, #YYYY, #ZZZZ
+Uplift of #XXXX
+Uplift of #YYYY
+Uplift of #ZZZZ
 
 ## Included PRs
 - #XXXX - <PR title>
