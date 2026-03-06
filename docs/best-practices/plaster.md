@@ -31,9 +31,13 @@ Matching specific context (method names, surrounding code) makes patches more ma
 **Only use `pattern` for simple matches—generally a single symbol name that you want to replace globally.** If you need more context (including whitespace), then `pattern_re` is more appropriate.
 
 ```yaml
-# ✅ CORRECT - simple symbol replacement with pattern
+# ✅ CORRECT - simple symbol replacement with pattern for all instances of a constant
 pattern: 'kOldConstantName'
 replacement: 'kNewConstantName'
+
+# ✅ CORRECT - simple symbol replacement with pattern for all instances of a method call
+pattern: 'ChromiumMethod'
+replacement: 'BraveMethod'
 
 # ✅ CORRECT - pattern_re handles flexible whitespace
 pattern_re: '(^\s+)(ChromiumMethod\(\))'
@@ -41,6 +45,15 @@ replacement: '\1BraveMethod()'
 
 # ❌ WRONG - pattern requires exact whitespace match, fragile to upstream changes
 pattern: '    MyMethod()'  # Breaks if upstream changes indentation
+replacement: '    BraveMethod()'
+
+# ✅ CORRECT - pattern_re handles flexible whitespace
+pattern_re: '(if\s+\()MyMethod\(\)([\S\s]+?{)'
+replacement: '\1BraveMethod()\2'
+
+# ❌ WRONG - pattern includes additional context
+pattern: 'if (MyMethod() && my_bool) {'  # Breaks if upstream changes indentation
+replacement: 'if (BraveMethod() && my_pool) {`
 ```
 
 Using `pattern` for simple symbol names keeps configs readable and maintainable. Reserve `pattern_re` for when you need regex features like whitespace matching, character classes, or structural patterns.
