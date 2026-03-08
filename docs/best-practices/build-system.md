@@ -825,3 +825,28 @@ class HistoryTool;
 
 **Do not create buildflags that combine channel, platform, and official_build conditions** (e.g., enabled only on nightly + desktop + official). These compound flags break during branch migration (nightly → beta → release) and create configurations that are nearly impossible to test locally. Use separate, independently testable flags instead.
 
+---
+
+<a id="BS-054"></a>
+
+## ❌ Don't Include Buildflag Headers in Conditionally-Compiled Files
+
+**If a file is only compiled when a buildflag is enabled (guarded by `if(enable_feature)` in BUILD.gn), that file should not `#include` the buildflag header or use `#if BUILDFLAG(...)` guards.** The file is never compiled when the flag is disabled, so checking the flag inside it is redundant and misleading.
+
+```cpp
+// In brave/components/foo/foo_impl.cc
+// (only in sources when enable_foo = true in BUILD.gn)
+
+// ❌ WRONG - redundant buildflag include and guard
+#include "brave/components/foo/common/buildflags/buildflags.h"
+
+#if BUILDFLAG(ENABLE_FOO)
+void DoFoo() { ... }
+#endif
+
+// ✅ CORRECT - file is already conditionally compiled, no guard needed
+void DoFoo() { ... }
+```
+
+Note: Public headers may still benefit from a `static_assert(BUILDFLAG(...))` as a safety net against accidental inclusion (see BS-049). This rule applies to implementation files and internal headers that are strictly behind the BUILD.gn guard.
+
