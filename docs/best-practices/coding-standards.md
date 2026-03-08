@@ -1121,13 +1121,15 @@ void MigrateProfilePrefs(PrefService* prefs) {
 }
 ```
 
+<a id="CS-068"></a>
+
 ## ✅ Clean Up All Dead Code When Removing Features
 
 **When removing a feature flag, model, or script, also remove all associated dead code:** unused helper functions, orphaned UI strings from `.grdp` files, related constants, and utility functions that were only referenced by the removed code. Leaving dead code behind creates maintenance burden and confusion.
 
 ---
 
-<a id="CS-066"></a>
+<a id="CS-069"></a>
 
 ## ❌ Avoid Multiple Inheritance Beyond Interfaces
 

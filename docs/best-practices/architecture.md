@@ -1062,6 +1062,8 @@ struct SearchResult {
 - Profile-scoped features use `KeyedServiceFactory` with proper `DependsOn` declarations
 - Global features are rare; most features should be profile-scoped or narrower
 
+<a id="ARCH-066"></a>
+
 ## ✅ Swap-and-Process for Reentrancy Protection
 
 **When processing a queue of pending callbacks or items, swap the queue into a local variable before iterating.** This protects against reentrancy — if processing an item triggers code that adds new items to the queue, those new items won't be processed in the current iteration and won't cause infinite loops.
@@ -1099,6 +1101,8 @@ class FooTabFeature {
   raw_ref<tabs::TabInterface> tab_;
   // To access the current window: tab_->GetBrowserWindowInterface()
 };
+
+<a id="ARCH-067"></a>
 
 ## ✅ Guard `base::BarrierCallback` Against Zero Count
 
@@ -1144,6 +1148,8 @@ class MyServiceFactory : public ProfileKeyedServiceFactory {
 ```
 
 For tab/window features, create them in `TabFeatures::Init()` or `BrowserWindowFeatures::Init()` respectively.
+
+<a id="ARCH-068"></a>
 
 ## ✅ New P3A Metrics Require Privacy Review
 
@@ -1354,6 +1360,8 @@ auto override = tabs::TabFeatures::GetUserDataFactoryForTesting()
 ```
 
 This avoids `BrowserWithTestWindowTest` (which Chromium discourages for production features) and enables testing with real browser infrastructure.
+
+<a id="ARCH-069"></a>
 
 ## ✅ Preference Keys Must Be Correct Before Shipping
 

@@ -380,6 +380,8 @@ Place the side-effecting call on the LEFT side of `||` to guarantee it always ru
 
 Once the page's JavaScript loads and Leo tokens are initialized, the themed value takes over naturally. The hardcoded value is only visible during the brief initial paint.
 
+<a id="FE-030"></a>
+
 ## ✅ Wrap `JSON.parse` in Try/Catch in React Render Paths
 
 **`JSON.parse` calls on external or server data in React render paths (including `useMemo`) must be wrapped in `try/catch`.** Malformed JSON will throw a `SyntaxError` that crashes the entire component tree if uncaught.
