@@ -266,6 +266,8 @@ gh api repos/$PR_REPO/issues/$PR_NUMBER/comments --paginate
 
 **CRITICAL — NO SHORTCUTS FOR LARGE DIFFS:** Regardless of diff size (even 100KB+), you MUST pass the **complete, untruncated diff** to every subagent and review ALL changed files. Do NOT skip files, truncate the diff, selectively review "key chunks", or take any other shortcut based on diff size. The chunked subagent architecture is specifically designed to handle large diffs — each subagent only checks ~3 rules, so the diff size is not a constraint. If the diff is large, that means MORE subagents are needed, not fewer.
 
+**CRITICAL — LAUNCH ALL DISCOVERED DOCS:** You MUST launch subagents for ALL documents returned by the discovery script — not just the ones you consider "most relevant." The discovery script already filters out inapplicable categories (e.g., iOS docs when no iOS files changed). If a document appears in the discovery output, it MUST get a subagent. Do NOT second-guess the discovery script or selectively skip documents. The only filtering happens in the script; you do not apply additional filtering.
+
 ### Step 6.1: Discover Applicable Docs, Chunk, and Launch Subagents
 
 For each applicable best-practice document, run the chunking script to split it into groups of ~3 rules, then launch one subagent per chunk. **Use multiple Agent tool calls in a single message** so they run in parallel. Pass the `PR_DIFF` content (fetched in Step 3) directly in each subagent's prompt so they don't need to fetch it again.
