@@ -1,7 +1,7 @@
 ---
 name: review
 description: "Review code for quality, root cause analysis, and fix confidence. Supports PR review and local review of uncommitted/branch changes. Default mode is local (reviews current branch changes). Triggers on: review pr, review this pr, /review <pr_url>, /review local, /review, check bot pr quality."
-allowed-tools: Bash(gh issue list:*), Bash(gh issue view:*), Bash(gh pr list:*), Bash(gh pr view:*), Bash(git diff:*), Bash(git log:*), Bash(git status:*), Bash(git merge-base:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(pwd:*), Read, Grep, Glob
+allowed-tools: Bash(gh issue list:*), Bash(gh issue view:*), Bash(gh pr list:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(git diff:*), Bash(git log:*), Bash(git status:*), Bash(git merge-base:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(pwd:*), Read, Edit, Grep, Glob
 ---
 
 # Code Review Skill
@@ -193,14 +193,41 @@ The following steps apply to both local and PR mode reviews.
 
 ---
 
-## Step 3: Analyze the Proposed Changes
+## Step 3: Fetch Diff and Classify Changed Files
 
-**For PR mode**, get the full diff:
+**For PR mode**, fetch the full diff once and save it for subagent use:
 ```bash
-gh pr diff $PR_NUMBER --repo $PR_REPO
+PR_DIFF=$(gh pr diff $PR_NUMBER --repo $PR_REPO)
 ```
 
-**For local mode**, the diff was already gathered in Step L1.
+**For local mode**, the diff was already gathered in Step L2. Combine the committed + uncommitted diffs into `PR_DIFF`.
+
+Extract the file list from the diff:
+```bash
+echo "$PR_DIFF" | grep '^diff --git' | sed 's|.*b/||'
+```
+
+File classification is handled automatically by the discovery script in Step 6.1 — no manual classification needed.
+
+---
+
+## Step 4: Fetch GitHub Data (PR Mode Only)
+
+**For the associated issue (if any):**
+```bash
+gh issue view $ISSUE_NUMBER --repo brave/brave-browser --json title,body,comments
+```
+
+**For PR reviews and comments:**
+```bash
+gh api repos/$PR_REPO/pulls/$PR_NUMBER/reviews --paginate
+gh api repos/$PR_REPO/pulls/$PR_NUMBER/comments --paginate
+gh api repos/$PR_REPO/issues/$PR_NUMBER/comments --paginate
+```
+
+---
+
+## Step 5: Analyze the Proposed Changes
 
 **Analyze the code in context:**
 
@@ -233,23 +260,177 @@ gh pr diff $PR_NUMBER --repo $PR_REPO
 
 ---
 
-## Step 4: Fetch GitHub Data (PR Mode Only)
+## Step 6: Check Against Best Practices (Chunked Subagent Review)
 
-**For the associated issue (if any):**
+**IMPORTANT:** The main context does NOT load best practices docs directly. Each review is performed by multiple focused subagents — one per chunk of ~5 rules — running in parallel. Large best-practice documents are split into evenly-sized chunks by a preprocessing script, so each subagent handles a focused set of rules. This ensures every rule is systematically checked rather than relying on a single pass to hold many rules in mind.
+
+### Step 6.1: Discover Applicable Docs, Chunk, and Launch Subagents
+
+For each applicable best-practice document, run the chunking script to split it into groups of ~5 rules, then launch one subagent per chunk. **Use multiple Agent tool calls in a single message** so they run in parallel. Pass the `PR_DIFF` content (fetched in Step 3) directly in each subagent's prompt so they don't need to fetch it again.
+
+**Discovery step:** First, determine which best-practice docs apply to this change. The discovery script auto-detects applicable documents based on changed file types — no hardcoded document list needed:
+
 ```bash
-gh issue view $ISSUE_NUMBER --repo brave/brave-browser --json title,body,comments
+# Extract changed file paths from the diff
+CHANGED_FILES=$(echo "$PR_DIFF" | grep '^diff --git' | sed 's|.*b/||')
+
+# Discover applicable docs (pass changed files via stdin)
+echo "$CHANGED_FILES" | python3 ./brave-core-tools/.claude/skills/review/discover-bp-docs.py \
+  ./brave-core-tools/docs/best-practices/ --changed-files-stdin
 ```
 
-**For PR reviews and comments:**
+If running from within `brave-core-tools/`:
 ```bash
-gh api repos/$PR_REPO/pulls/$PR_NUMBER/reviews --paginate
-gh api repos/$PR_REPO/pulls/$PR_NUMBER/comments --paginate
-gh api repos/$PR_REPO/issues/$PR_NUMBER/comments --paginate
+echo "$CHANGED_FILES" | python3 .claude/skills/review/discover-bp-docs.py \
+  docs/best-practices/ --changed-files-stdin
 ```
+
+The script outputs JSON with each applicable doc's path and category. Documents are matched to file types by naming convention (e.g., `testing-*.md` applies when test files are changed, `android.md` when `.java`/`.kt` files are changed). Documents that don't match any specific category (like `architecture.md`, `documentation.md`) are always included.
+
+**Chunking step:** For each discovered document, run:
+```bash
+python3 ./brave-core-tools/.claude/skills/review/chunk-best-practices.py <doc_path>
+```
+
+This outputs JSON with one or more chunks per document. Each chunk contains:
+- `doc`: the source document filename
+- `chunk_index` / `total_chunks`: position within the document
+- `rule_count`: number of `##` rules in this chunk
+- `headings`: list of rule heading texts (for the audit trail)
+- `content`: the full text to pass to the subagent (includes the doc header + the chunk's rules)
+
+Small documents (<=5 rules) produce 1 chunk. Large documents are split evenly (e.g., 25 rules → 5 chunks of 5). Launch one subagent per chunk.
+
+### Step 6.2: Subagent Prompt
+
+Each subagent prompt MUST include:
+
+1. **The chunk content** — embed the `content` field from the chunking script output directly in the prompt. The subagent does NOT read any files — all rules are provided inline. Include it like:
+   ````
+   Here are the best practice rules to check:
+   ```markdown
+   <chunk content>
+   ```
+   ````
+2. **The diff content** — include the full diff text directly in the prompt. The subagent MUST NOT call `gh pr diff` or `git diff` — the diff is already provided. Embed it in the prompt like:
+   ````
+   Here is the diff to review:
+   ```diff
+   <PR_DIFF content>
+   ```
+   ````
+3. **The review rules** (copied into the subagent prompt):
+   - Only flag violations in ADDED lines (+ lines), not existing code
+   - Also flag bugs introduced by the change (e.g., missing string separators, duplicate DEPS entries, code inside wrong `#if` guard)
+   - **Check surrounding context before making claims.** When a violation involves dependencies, includes, or patterns, read the full file context (e.g., the BUILD.gn deps list, existing includes in the file) to verify your claim is accurate. Do NOT claim a PR "adds a dependency" or "introduces a pattern" if it already existed before the PR.
+   - **Only comment on things the author introduced.** If a dependency, pattern, or architectural issue already existed before this PR, do not flag it — even if it violates a best practice. The author is not responsible for pre-existing issues. Focus exclusively on what the changes add or modify.
+   - **Do not suggest renaming imported symbols defined outside the change.** When a `+` line imports or calls a function/class/variable from another module, and that symbol's definition is NOT in a file changed by the diff, do not comment on the symbol's naming. Only flag naming issues on symbols that are defined or renamed within the changed files.
+   - Security-sensitive areas (wallet, crypto, sync, credentials) deserve extra scrutiny — type mismatches, truncation, and correctness issues should use stronger language
+   - Do NOT flag: existing code not being changed, template functions defined in headers, simple inline getters in headers, style preferences not in the documented best practices, **include/import ordering** (this is handled by formatting tools and linters)
+   - **Every claim must be verified in the best practices source document.** Do NOT make claims based on general knowledge or assumptions about what "should" be a best practice. If the best practices docs do not contain a rule about something, do NOT flag it as a violation — even if you believe it to be true. Hallucinated rules erode trust and waste developer time. When in doubt, do not comment.
+   - Comment style: short (1-3 sentences), targeted, acknowledge context. Use "nit:" for genuinely minor/stylistic issues. Substantive issues (test reliability, correctness, banned APIs) should be direct without "nit:" prefix
+4. **Best practice link requirement** — each rule in the best practices docs has a stable ID anchor (e.g., `<a id="CS-001"></a>`) on the line before the heading. For each violation, the subagent MUST include a direct link using that ID. The link format is:
+   ```
+   https://github.com/brave-experiments/brave-core-tools/tree/master/docs/best-practices/<doc>.md#<ID>
+   ```
+   **CRITICAL: The `rule_link` fragment MUST be an exact `<a id="...">` value from the rules provided in the chunk.** Do NOT invent IDs, guess ID numbers, or construct anchors from heading text. If no `<a id>` tag exists for the rule, omit the `rule_link` field entirely.
+5. **The systematic audit requirement** (Step 6.3 below)
+6. **Required output format** (Step 6.4 below)
+
+### Step 6.3: Systematic Audit Requirement
+
+**CRITICAL — this is what prevents the subagent from stopping after finding a few violations.**
+
+The subagent MUST work through its chunk **heading by heading**, checking every `##` rule against the diff. It must output an audit trail listing EVERY `##` heading in the chunk with a verdict:
+
+```
+AUDIT:
+PASS: Always Include What You Use (IWYU)
+PASS: Use Positive Form for Booleans and Methods
+N/A: Consistent Naming Across Layers
+FAIL: Don't Use rapidjson
+PASS: Use CHECK for Impossible Conditions
+... (one entry per ## heading in the chunk)
+```
+
+Verdicts:
+- **PASS**: Checked the diff — no violation found
+- **N/A**: Rule doesn't apply to the types of changes in this diff
+- **FAIL**: Violation found — must have a corresponding entry in VIOLATIONS
+
+This forces the model to explicitly consider every rule rather than satisficing after a few findings.
+
+### Step 6.4: Required Subagent Output Format
+
+Each subagent MUST return this structured format:
+
+```
+DOCUMENT: <document name> (chunk <chunk_index+1>/<total_chunks>)
+
+AUDIT:
+PASS: <rule heading>
+N/A: <rule heading>
+FAIL: <rule heading>
+... (one line per ## heading in the chunk)
+
+VIOLATIONS:
+- file: <path>, line: <line_number>, severity: <"high"|"medium"|"low">, rule: "<rule heading>", rule_link: <full GitHub URL to the rule heading>, issue: <brief description>, draft_comment: <1-3 sentence comment>
+- ...
+NO_VIOLATIONS (if none found)
+
+Severity guide:
+- **high**: Correctness bugs, use-after-free, security issues, banned APIs, test reliability problems (e.g., RunUntilIdle)
+- **medium**: Substantive best practice violations (wrong container type, missing error handling, architectural issues)
+- **low**: Nits, style preferences, missing docs, naming suggestions, minor cleanup
+```
+
+### Step 6.5: Aggregate and Validate Results
+
+After ALL chunk subagents return:
+
+1. **Aggregate violations** from all chunk subagents into a single list. Sort by severity: high → medium → low.
+
+2. **Validate rule links** — for each violation with a `rule_link`, extract the fragment ID and validate it exists in the target doc:
+   ```bash
+   python3 ./brave-core-tools/scripts/manage-bp-ids.py --check-link <ID> --doc <doc>.md
+   ```
+   If the ID is invalid, strip the link from the comment text. Violations missing `rule_link` that are not genuine bug/correctness/security findings should be dropped.
+
+3. **Deep-dive validation** — before including in the report, validate every remaining violation by reading the actual source code:
+   - **Read the actual source file** at and around the flagged line using the Read tool (not the diff) to see the full file context
+   - **Verify the claim is true.** If the violation says "this should use X instead of Y", confirm X is actually available, appropriate, and consistent with the rest of the file/module
+   - **Deprecation claims require header verification.** Read the actual header file to confirm deprecation. Do NOT rely on training data
+   - **Check surrounding context for justification.** Look for comments, TODOs, or patterns that explain the code
+   - **Drop false positives.** If reading the source reveals the violation is incorrect, drop it
+
+4. **Present violations one at a time and offer to fix each.** After validation, walk through the remaining violations sequentially. For each violation, present it to the user and ask whether they want it fixed:
+
+   ```
+   **Violation 1/N** (severity: high)
+   **File**: path/to/file.cc:42
+   **Rule**: <rule heading>
+   **Issue**: <description>
+   **Suggested fix**: <what the fix would look like>
+
+   Fix this violation? (yes/no/skip)
+   ```
+
+   - **yes**: Apply the fix immediately using the Edit tool. Read the file first if not already loaded, make the targeted change, then confirm what was changed before moving to the next violation.
+   - **no** or **skip**: Leave the code as-is and move to the next violation.
+   - If the user says "fix all" or "yes to all", apply all remaining violations without further prompting.
+   - If the user says "stop" or "no to all", skip all remaining violations and proceed to the report.
+
+   **Fix guidelines:**
+   - Fixes must be minimal and targeted — only change what the violation requires
+   - Do NOT refactor surrounding code or make "while you're here" improvements
+   - If a fix is ambiguous or could be done multiple ways, explain the options and ask the user which approach they prefer before editing
+   - If a violation cannot be auto-fixed (e.g., requires architectural redesign or new tests), say so and move on
+
+5. **Include all violations** (fixed and unfixed) in the review report under the Best Practices section. Mark each as **(fixed)** or **(unfixed)** so the user knows what remains.
 
 ---
 
-## Step 5: Validate Root Cause Analysis
+## Step 7: Validate Root Cause Analysis
 
 **Read the PR body and any issue analysis carefully.**
 
@@ -300,20 +481,9 @@ Without this explanation, the analysis is incomplete even if the general mechani
 
 ---
 
-## Step 6: Check Against Best Practices
+## Step 8: Additional Best Practices Checks (Non-Chunked)
 
-**Read and apply `./brave-core-tools/BEST-PRACTICES.md` criteria.**
-
-For test fixes, focus on the async testing and test isolation docs. For code changes, read the relevant best practices docs based on what the PR modifies:
-- **C++ code changes**: Read `docs/best-practices/coding-standards.md` (naming, ownership, Chromium APIs, banned patterns)
-- **Front-end (TypeScript/React) changes**: Read `docs/best-practices/frontend.md` (component props, XSS prevention)
-- **Architecture/service changes**: Read `docs/best-practices/architecture.md` (layering, factories, dependency injection)
-- **Build file changes**: Read `docs/best-practices/build-system.md` (GN organization, deps, buildflags)
-- **chromium_src changes**: Read `docs/best-practices/chromium-src-overrides.md` (override patterns, patch style)
-
-Only read the docs relevant to the PR's changes — don't load all of them every time.
-
-**CRITICAL: Only flag violations that are explicitly documented in the best practices.** Do NOT make claims based on general knowledge or assumptions about what "should" be a best practice. If the best practices docs do not contain a rule about something, do NOT flag it. Do NOT claim an API is "deprecated", a pattern is "banned", or a function should be replaced unless the best practices doc explicitly says so. Every claim must be traceable to a specific rule you read. Hallucinated rules erode developer trust.
+These checks are performed directly by the main context (not subagents) because they require PR-level reasoning rather than per-rule checking:
 
 ### Timing-Based "Fixes" (AUTOMATIC FAIL)
 
@@ -405,7 +575,7 @@ For flaky tests, the root cause analysis must explain **why the failure is inter
 
 ---
 
-## Step 7: Assess Fix Confidence
+## Step 9: Assess Fix Confidence
 
 Rate confidence level:
 
@@ -431,7 +601,7 @@ Rate confidence level:
 
 ---
 
-## Step 8: Generate Review Report
+## Step 10: Generate Review Report
 
 **CRITICAL: Avoid Redundancy**
 - Each piece of information should appear ONCE in the report
@@ -444,7 +614,7 @@ Rate confidence level:
 - The confidence level should reflect the state AFTER you've provided any missing context - if you filled the gaps, confidence should be higher
 
 **CRITICAL: No Vague Language in YOUR Analysis**
-- The same vague language rules (Step 5) apply to YOUR review output, not just the PR's analysis
+- The same vague language rules (Step 7) apply to YOUR review output, not just the PR's analysis
 - If you write "appears to", "seems to", "might be", etc. in your analysis, you have NOT completed the review
 - You must either:
   1. **Investigate further** until you can make a definitive statement, OR
@@ -475,6 +645,9 @@ Rate confidence level:
 
 ### Fix Evaluation
 <Does the fix address the root cause? Any best practices violations?>
+
+### Best Practices (Chunked Subagent Results)
+<Summarize findings from the chunked best practices review. List any validated violations with file, line, severity, and the specific rule violated. Include rule links where available.>
 
 ## Issues Requiring Author Action
 
@@ -511,8 +684,8 @@ If no issues: "None - PR is ready for review."
 ### Change Evaluation
 <What do the changes accomplish? Is the approach correct? Any logic errors?>
 
-### Best Practices
-<Any best practices violations found?>
+### Best Practices (Chunked Subagent Results)
+<Summarize findings from the chunked best practices review. List any validated violations with file, line, severity, and the specific rule violated. Include rule links where available.>
 
 ## Issues Found
 
@@ -635,9 +808,15 @@ Review a PR by number (assumes brave/brave-core):
 ### Both Modes
 - [ ] Determined correct brave source directory based on working directory
 - [ ] Analyzed the diff (local changes or PR diff)
+- [ ] Ran discovery script to find applicable best practices documents
+- [ ] Ran chunking script on each discovered document
+- [ ] Launched parallel subagents for all chunks
+- [ ] Each subagent produced a full AUDIT trail (one verdict per ## heading)
+- [ ] Aggregated and validated all violations from subagents
+- [ ] Deep-dive validated each violation by reading actual source files
 - [ ] **Read the actual source files in $BRAVE_SRC/** to understand context
 - [ ] Validated root cause analysis quality (or assessed code quality for local)
-- [ ] Checked against BEST-PRACTICES.md
+- [ ] Checked timing-based fixes, nested run loops, and test disables (Step 8)
 - [ ] Assessed fix confidence level
 - [ ] Only reported important issues
 - [ ] Provided clear pass/fail verdict with reasoning
@@ -647,7 +826,6 @@ Review a PR by number (assumes brave/brave-core):
 - [ ] Extracted associated GitHub issue (if any)
 - [ ] Researched previous fix attempts
 - [ ] If previous attempts exist: proved current fix is materially different (or FAILED the review)
-- [ ] Used filtering scripts for all GitHub data
 - [ ] Only posted to GitHub if user explicitly requested (with disclaimer prefix)
 - [ ] For test disables: checked upstream flakiness via check-upstream-flake.py
 
