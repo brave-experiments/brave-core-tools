@@ -262,11 +262,15 @@ gh api repos/$PR_REPO/issues/$PR_NUMBER/comments --paginate
 
 ## Step 6: Check Against Best Practices (Chunked Subagent Review)
 
-**IMPORTANT:** The main context does NOT load best practices docs directly. Each review is performed by multiple focused subagents — one per chunk of ~3 rules — running in parallel. Large best-practice documents are split into evenly-sized chunks by a preprocessing script, so each subagent handles a focused set of rules. This ensures every rule is systematically checked rather than relying on a single pass to hold many rules in mind.
+**IMPORTANT:** The main context does NOT load best practices docs directly. Each review is performed by subagents — one per chunk of ~3 rules — running in parallel. Large best-practice documents are split into evenly-sized chunks by a preprocessing script, so each subagent handles a focused set of rules. This ensures every rule is systematically checked rather than relying on a single pass to hold many rules in mind.
+
+**ZERO-TOLERANCE RULE: You MUST launch a subagent for EVERY chunk from EVERY discovered document. No exceptions. No filtering. No "focusing on key areas." No commentary about the number of chunks. Just launch them all.**
 
 **CRITICAL — NO SHORTCUTS FOR LARGE DIFFS:** Regardless of diff size (even 100KB+), you MUST pass the **complete, untruncated diff** to every subagent and review ALL changed files. Do NOT skip files, truncate the diff, selectively review "key chunks", or take any other shortcut based on diff size. The chunked subagent architecture is specifically designed to handle large diffs — each subagent only checks ~3 rules, so the diff size is not a constraint. If the diff is large, that means MORE subagents are needed, not fewer.
 
 **CRITICAL — LAUNCH ALL DISCOVERED DOCS:** You MUST launch subagents for ALL documents returned by the discovery script — not just the ones you consider "most relevant." The discovery script already filters out inapplicable categories (e.g., iOS docs when no iOS files changed). If a document appears in the discovery output, it MUST get a subagent. Do NOT second-guess the discovery script or selectively skip documents. The only filtering happens in the script; you do not apply additional filtering.
+
+**CRITICAL — NO COMMENTARY ABOUT CHUNK COUNT:** Do NOT output any text commenting on the number of chunks, expressing concern about the volume of work, or announcing that you will "focus on key areas" or "launch focused subagents for the most relevant areas." Just launch ALL subagents silently. The number of chunks is irrelevant — launch them all in parallel without editorializing. Any message like "Given the large number of chunks (N total), I'll focus on..." is WRONG and violates this skill's requirements. You must launch every single chunk subagent regardless of how many there are.
 
 ### Step 6.1: Discover Applicable Docs, Chunk, and Launch Subagents
 
