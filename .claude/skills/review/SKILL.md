@@ -264,6 +264,8 @@ gh api repos/$PR_REPO/issues/$PR_NUMBER/comments --paginate
 
 **IMPORTANT:** The main context does NOT load best practices docs directly. Each review is performed by multiple focused subagents — one per chunk of ~3 rules — running in parallel. Large best-practice documents are split into evenly-sized chunks by a preprocessing script, so each subagent handles a focused set of rules. This ensures every rule is systematically checked rather than relying on a single pass to hold many rules in mind.
 
+**CRITICAL — NO SHORTCUTS FOR LARGE DIFFS:** Regardless of diff size (even 100KB+), you MUST pass the **complete, untruncated diff** to every subagent and review ALL changed files. Do NOT skip files, truncate the diff, selectively review "key chunks", or take any other shortcut based on diff size. The chunked subagent architecture is specifically designed to handle large diffs — each subagent only checks ~3 rules, so the diff size is not a constraint. If the diff is large, that means MORE subagents are needed, not fewer.
+
 ### Step 6.1: Discover Applicable Docs, Chunk, and Launch Subagents
 
 For each applicable best-practice document, run the chunking script to split it into groups of ~3 rules, then launch one subagent per chunk. **Use multiple Agent tool calls in a single message** so they run in parallel. Pass the `PR_DIFF` content (fetched in Step 3) directly in each subagent's prompt so they don't need to fetch it again.
@@ -312,7 +314,7 @@ Each subagent prompt MUST include:
    <chunk content>
    ```
    ````
-2. **The diff content** — include the full diff text directly in the prompt. The subagent MUST NOT call `gh pr diff` or `git diff` — the diff is already provided. Embed it in the prompt like:
+2. **The diff content** — include the **complete, untruncated** diff text directly in the prompt. Never omit, summarize, or truncate any portion of the diff regardless of its size. The subagent MUST NOT call `gh pr diff` or `git diff` — the diff is already provided. Embed it in the prompt like:
    ````
    Here is the diff to review:
    ```diff
