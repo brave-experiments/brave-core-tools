@@ -262,11 +262,11 @@ gh api repos/$PR_REPO/issues/$PR_NUMBER/comments --paginate
 
 ## Step 6: Check Against Best Practices (Chunked Subagent Review)
 
-**IMPORTANT:** The main context does NOT load best practices docs directly. Each review is performed by multiple focused subagents — one per chunk of ~5 rules — running in parallel. Large best-practice documents are split into evenly-sized chunks by a preprocessing script, so each subagent handles a focused set of rules. This ensures every rule is systematically checked rather than relying on a single pass to hold many rules in mind.
+**IMPORTANT:** The main context does NOT load best practices docs directly. Each review is performed by multiple focused subagents — one per chunk of ~3 rules — running in parallel. Large best-practice documents are split into evenly-sized chunks by a preprocessing script, so each subagent handles a focused set of rules. This ensures every rule is systematically checked rather than relying on a single pass to hold many rules in mind.
 
 ### Step 6.1: Discover Applicable Docs, Chunk, and Launch Subagents
 
-For each applicable best-practice document, run the chunking script to split it into groups of ~5 rules, then launch one subagent per chunk. **Use multiple Agent tool calls in a single message** so they run in parallel. Pass the `PR_DIFF` content (fetched in Step 3) directly in each subagent's prompt so they don't need to fetch it again.
+For each applicable best-practice document, run the chunking script to split it into groups of ~3 rules, then launch one subagent per chunk. **Use multiple Agent tool calls in a single message** so they run in parallel. Pass the `PR_DIFF` content (fetched in Step 3) directly in each subagent's prompt so they don't need to fetch it again.
 
 **Discovery step:** First, determine which best-practice docs apply to this change. The discovery script auto-detects applicable documents based on changed file types — no hardcoded document list needed:
 
