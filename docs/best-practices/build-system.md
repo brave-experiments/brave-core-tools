@@ -778,9 +778,9 @@ inline constexpr char kOllamaEndpoint[] = "http://localhost:11434";
 
 <a id="BS-050"></a>
 
-## ❌ Never Add New Constants to `brave_constants.h`
+## ❌ Never Add Anything to `components/constants` (Deprecated)
 
-**The file `components/constants/brave_constants.h` is a legacy dumping ground.** Never add new constants there. Instead, place constants in a `common` target within the component that owns them.
+**The `components/constants` directory is not a real component — it is a deprecated legacy dumping ground that should be removed.** Never add new constants, headers, or targets there. Instead, place constants in a `common` target within the component that owns them.
 
 ```gn
 # ❌ WRONG - adding to the legacy catch-all
@@ -791,6 +791,8 @@ inline constexpr char kGate3OAuthUrl[] = "...";
 # components/brave_rewards/common/constants.h
 inline constexpr char kGate3OAuthUrl[] = "...";
 ```
+
+Do not add new `deps` on `//brave/components/constants` either — migrate existing usages to proper component-owned targets when you encounter them.
 
 If a constant (especially a URL) is shared across multiple components with no clear owner, place it in a `brave_domains` target.
 
